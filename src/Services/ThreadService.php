@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services;
+namespace SimpleBBS\Services;
 
-use App\Repositories\ThreadRepository;
+use SimpleBBS\Repositories\ThreadRepository;
 use InvalidArgumentException;
 
 class ThreadService

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support;
+namespace SimpleBBS\Support;
 
 use PDO;
 use PDOException;

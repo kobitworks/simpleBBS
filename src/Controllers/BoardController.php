@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Controllers;
+namespace SimpleBBS\Controllers;
 
-use App\Http\Request;
-use App\Services\BoardService;
-use App\Services\ThreadService;
+use SimpleBBS\Http\Request;
+use SimpleBBS\Services\BoardService;
+use SimpleBBS\Services\ThreadService;
 use InvalidArgumentException;
 use Twig\Environment;
 

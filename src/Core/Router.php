@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Core;
+namespace SimpleBBS\Core;
 
-use App\Http\Request;
+use SimpleBBS\Http\Request;
 use InvalidArgumentException;
 use RuntimeException;
 

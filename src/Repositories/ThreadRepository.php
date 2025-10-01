@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Repositories;
+namespace SimpleBBS\Repositories;
 
-use App\Support\DatabaseManager;
+use SimpleBBS\Support\DatabaseManager;
 use DateTimeImmutable;
 use RuntimeException;
 use Throwable;
