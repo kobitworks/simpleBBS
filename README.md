@@ -25,8 +25,8 @@ composer require simplebbs/simple-bbs
   - `true` の場合はログイン必須となり、認証の設定がないとアプリケーションが起動しません。
 - `SIMPLEBBS_ALLOW_ANONYMOUS_POST` (既定値: `true`)
   - 匿名でのスレッド作成・投稿を許可します。`false` にすると未ログイン時は投稿できません。
-- `SIMPLEBBS_ALLOW_USER_BOARD_CREATION` (既定値: `true`)
-  - ユーザーによる新規ボード作成を許可します。`false` にすると作成フォームが表示されません。設定値に関わらず、ボード作成を行うにはログインが必要です。
+- `SIMPLEBBS_ALLOW_BOARD_CREATE` (既定値: `true`)
+  - ログイン済みユーザーによる新規ボード作成を許可します。`false` にすると作成フォームが表示されません。互換性のため、`SIMPLEBBS_ALLOW_USER_BOARD_CREATION` も引き続き読み込まれます。
 
 ### 認証設定
 
