@@ -1,9 +1,11 @@
 <?php
 
-use App\Http\Request;
+use SimpleBBS\Application;
+use SimpleBBS\Http\Request;
 
-require_once __DIR__ . '/../app/bootstrap.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$request = Request::fromGlobals();
+$storagePath = getenv('SIMPLEBBS_STORAGE_PATH') ?: __DIR__ . '/../storage';
 
-handle($request);
+$app = Application::create($storagePath);
+$app->handle(Request::fromGlobals());

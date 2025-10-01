@@ -1,12 +1,13 @@
 # simpleBBS アーキテクチャ概要
 
 ## 目的
-simpleBBS は、Composer で導入できるシンプルな BBS パッケージです。ボード(掲示板) とスレッド(投稿の連なり) を分離し、ボードごとに SQLite データベースを持つ構成で、別サイトへの組み込みを前提としています。
+simpleBBS は、Composer で導入できるシンプルな BBS パッケージです。ボード(掲示板) とスレッド(投稿の連なり) を分離し、ボードごとに
+SQLite データベースを持つ構成で、別サイトへの組み込みを前提としています。
 
 ## ディレクトリ構成
 ```
-app/
-  bootstrap.php         ... 依存解決とルーティングの設定
+src/
+  Application.php        ... 依存解決とルーティングを担うエントリポイント
   Controllers/          ... HTTP コントローラ層
   Core/                 ... ルーターなどコアコンポーネント
   Http/                 ... リクエストオブジェクト
@@ -17,7 +18,7 @@ public/
   index.php             ... フロントコントローラ
   css/, js/             ... アセット
 resources/views/        ... Twig テンプレート
-storage/                ... SQLite ファイル配置 (system.sqlite と boards/*.sqlite)
+storage/                ... SQLite ファイル配置 (system.sqlite と boards/*.sqlite を生成)
 docs/                   ... ドキュメント
 ```
 
@@ -28,7 +29,7 @@ docs/                   ... ドキュメント
   - `threads` テーブル: スレッドタイトルと作成・更新日時。
   - `posts` テーブル: スレッド内の投稿(投稿者、本文、投稿日時)。
 
-`App\Support\DatabaseManager` がファイル生成やスキーマ初期化を担い、必要に応じて PDO 接続を返します。
+`SimpleBBS\Support\DatabaseManager` がファイル生成やスキーマ初期化を担い、必要に応じて PDO 接続を返します。
 
 ## ドメインロジック
 - `BoardService`
@@ -40,11 +41,12 @@ docs/                   ... ドキュメント
 
 ## プレゼンテーション層
 - Twig を利用したテンプレートでレイアウト(`base.twig`) を定義。
-- `boards/index.twig` でボード一覧・作成フォーム、`boards/show.twig` でスレッド一覧・作成フォーム、`threads/show.twig` で投稿表示と投稿フォームを表示します。
+- `boards/index.twig` でボード一覧・作成フォーム、`boards/show.twig` でスレッド一覧・作成フォーム、`threads/show.twig` で投稿表示
+と投稿フォームを表示します。
 - フロントエンドは `public/css/main.css` の軽量スタイルのみを使用。
 
 ## ルーティング
-`app/bootstrap.php` で `Router` に以下のルートを定義しています。
+`SimpleBBS\Application` が `Router` に以下のルートを定義します。
 
 | ルート名 | メソッド | 説明 |
 |----------|----------|------|
@@ -59,7 +61,8 @@ docs/                   ... ドキュメント
 
 ## 組み込み手順概要
 1. `composer require simplebbs/simple-bbs` でパッケージを導入。(開発中はローカルパス指定も可能)
-2. `public/index.php` を Web ルートに配置し、`storage/` ディレクトリへの書き込み権限を付与。
+2. `public/index.php` を Web ルートに配置し、`storage/` ディレクトリへの書き込み権限を付与するか、環境変数 `SIMPLEBBS_STORAGE_PATH`
+   で別のディレクトリを指定します。
 3. 必要に応じて Twig テンプレートや CSS をカスタマイズしてサイトデザインと統一。
 
 以上の構成により、複数のボードを持つ BBS を迅速に構築できます。

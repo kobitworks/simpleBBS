@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services;
+namespace SimpleBBS\Services;
 
-use App\Repositories\BoardRepository;
+use SimpleBBS\Repositories\BoardRepository;
 use InvalidArgumentException;
 
 class BoardService
