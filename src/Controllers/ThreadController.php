@@ -4,9 +4,9 @@ namespace SimpleBBS\Controllers;
 
 use SimpleBBS\Boards\BoardManager;
 use SimpleBBS\Http\Request;
+use SimpleBBS\Support\Config;
 use SimpleBBS\Threads\ThreadManager;
 use InvalidArgumentException;
-use RuntimeException;
 use Twig\Environment;
 
 class ThreadController
@@ -14,7 +14,8 @@ class ThreadController
     public function __construct(
         private readonly Environment $view,
         private readonly BoardManager $boardManager,
-        private readonly ThreadManager $threadManager
+        private readonly ThreadManager $threadManager,
+        private readonly Config $config
     ) {
     }
 
@@ -23,16 +24,35 @@ class ThreadController
         $slug = (string)$request->query('slug');
         $board = $this->boardManager->getBoard($slug);
         $user = $request->user();
+        $authorName = $user?->getName();
 
-        if (!$user) {
-            throw new RuntimeException('ログインが必要です。');
+        if (!$user && !$this->config->allowsAnonymousPosting()) {
+            http_response_code(403);
+            $threads = $this->threadManager->listThreads($board['slug']);
+            echo $this->view->render('boards/show.twig', [
+                'board' => $board,
+                'threads' => $threads,
+                'errors' => ['スレッドを作成するにはログインが必要です。'],
+                'old' => [
+                    'thread' => [
+                        'title' => $request->input('title'),
+                        'body' => $request->input('body'),
+                        'author_name' => $request->input('author_name'),
+                    ],
+                ],
+            ]);
+            return;
+        }
+
+        if (!$authorName) {
+            $authorName = $this->resolveAuthorName($request->input('author_name'));
         }
 
         try {
             $threadId = $this->threadManager->createThread(
                 $board['slug'],
                 (string)$request->input('title'),
-                $user->getName(),
+                $authorName,
                 (string)$request->input('body')
             );
 
@@ -48,6 +68,7 @@ class ThreadController
                     'thread' => [
                         'title' => $request->input('title'),
                         'body' => $request->input('body'),
+                        'author_name' => $request->input('author_name'),
                     ],
                 ],
             ]);
@@ -75,16 +96,32 @@ class ThreadController
         $threadId = (int)$request->query('thread');
         $board = $this->boardManager->getBoard($slug);
         $user = $request->user();
+        $authorName = $user?->getName();
 
-        if (!$user) {
-            throw new RuntimeException('ログインが必要です。');
+        if (!$user && !$this->config->allowsAnonymousPosting()) {
+            http_response_code(403);
+            $thread = $this->threadManager->getThread($board['slug'], $threadId);
+            echo $this->view->render('threads/show.twig', [
+                'board' => $board,
+                'thread' => $thread,
+                'errors' => ['投稿するにはログインが必要です。'],
+                'old' => [
+                    'body' => $request->input('body'),
+                    'author_name' => $request->input('author_name'),
+                ],
+            ]);
+            return;
+        }
+
+        if (!$authorName) {
+            $authorName = $this->resolveAuthorName($request->input('author_name'));
         }
 
         try {
             $this->threadManager->addPost(
                 $board['slug'],
                 $threadId,
-                $user->getName(),
+                $authorName,
                 (string)$request->input('body')
             );
 
@@ -98,8 +135,16 @@ class ThreadController
                 'errors' => [$exception->getMessage()],
                 'old' => [
                     'body' => $request->input('body'),
+                    'author_name' => $request->input('author_name'),
                 ],
             ]);
         }
+    }
+
+    private function resolveAuthorName(mixed $authorName): string
+    {
+        $name = trim((string)$authorName);
+
+        return $name !== '' ? $name : '名無しさん';
     }
 }

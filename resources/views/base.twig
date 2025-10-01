@@ -19,7 +19,7 @@
                 <form method="post" action="?route=auth.logout" class="l-header__logout">
                     <button type="submit" class="c-button c-button--link">ログアウト</button>
                 </form>
-            {% else %}
+            {% elseif authSupportsLogin %}
                 <a href="?route=auth.login" class="c-button">ログイン</a>
             {% endif %}
         </div>
