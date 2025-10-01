@@ -31,18 +31,18 @@ class Config
     {
         $settings = [];
 
-        $requireLogin = getenv('SIMPLEBBS_REQUIRE_LOGIN');
-        if ($requireLogin !== false) {
+        $requireLogin = self::getEnvValue(['MUST_LOGIN', 'SIMPLEBBS_REQUIRE_LOGIN']);
+        if ($requireLogin !== null) {
             $settings['require_login'] = self::toBool($requireLogin);
         }
 
-        $allowAnonymous = getenv('SIMPLEBBS_ALLOW_ANONYMOUS_POST');
-        if ($allowAnonymous !== false) {
+        $allowAnonymous = self::getEnvValue(['ANONYMOUS_POST', 'SIMPLEBBS_ALLOW_ANONYMOUS_POST']);
+        if ($allowAnonymous !== null) {
             $settings['allow_anonymous_posting'] = self::toBool($allowAnonymous);
         }
 
-        $allowBoardCreation = getenv('SIMPLEBBS_ALLOW_USER_BOARD_CREATION');
-        if ($allowBoardCreation !== false) {
+        $allowBoardCreation = self::getEnvValue(['USER_BOARD_CREAT', 'SIMPLEBBS_ALLOW_USER_BOARD_CREATION']);
+        if ($allowBoardCreation !== null) {
             $settings['allow_user_board_creation'] = self::toBool($allowBoardCreation);
         }
 
@@ -82,6 +82,19 @@ class Config
     public function toArray(): array
     {
         return $this->settings;
+    }
+
+    private static function getEnvValue(array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            $value = getenv($key);
+
+            if ($value !== false) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     private static function toBool(string $value): bool

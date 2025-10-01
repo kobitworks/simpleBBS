@@ -26,16 +26,17 @@
 
 <section class="c-panel">
     <h2 class="c-panel__title">新規ボード作成</h2>
-    {% if features.allowUserBoardCreation %}
-        {% if errors is not empty %}
-            <div class="c-alert">
-                <ul>
-                    {% for error in errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
+    {% if errors is not empty %}
+        <div class="c-alert">
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if features.allowUserBoardCreation and authUser %}
         <form method="post" action="?route=boards.store" class="c-form">
             <div class="c-form__row">
                 <label for="title">ボード名</label>
@@ -53,8 +54,10 @@
                 <button type="submit" class="c-button">作成</button>
             </div>
         </form>
-    {% else %}
+    {% elseif not features.allowUserBoardCreation %}
         <p>現在は新しいボードの作成が制限されています。</p>
+    {% else %}
+        <p>ボードを作成するにはログインしてください。</p>
     {% endif %}
 </section>
 {% endblock %}

@@ -19,14 +19,14 @@ composer require simplebbs/simple-bbs
 
 ### 設定項目
 
-`.env` または環境変数で以下の項目を設定できます。未指定の場合は既定値が使用されます。
+`.env` または環境変数で以下の項目を設定できます。未指定の場合は既定値が使用されます。括弧内は互換性のために引き続き利用できる旧名称です。
 
-- `SIMPLEBBS_REQUIRE_LOGIN` (既定値: `false`)
+- `MUST_LOGIN` (`SIMPLEBBS_REQUIRE_LOGIN`, 既定値: `false`)
   - `true` の場合はログイン必須となり、認証の設定がないとアプリケーションが起動しません。
-- `SIMPLEBBS_ALLOW_ANONYMOUS_POST` (既定値: `true`)
+- `ANONYMOUS_POST` (`SIMPLEBBS_ALLOW_ANONYMOUS_POST`, 既定値: `true`)
   - 匿名でのスレッド作成・投稿を許可します。`false` にすると未ログイン時は投稿できません。
-- `SIMPLEBBS_ALLOW_USER_BOARD_CREATION` (既定値: `true`)
-  - ユーザーによる新規ボード作成を許可します。`false` にすると作成フォームが表示されません。
+- `USER_BOARD_CREAT` (`SIMPLEBBS_ALLOW_USER_BOARD_CREATION`, 既定値: `true`)
+  - ユーザーによる新規ボード作成を許可します。`false` にすると作成フォームが表示されません。ボード作成はログイン済みのユーザーのみ利用できます。
 
 ### 認証設定
 
