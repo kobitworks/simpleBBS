@@ -8,3 +8,5 @@
 *.min.css
 *.min.js
 composer.lock
+
+/storage/
