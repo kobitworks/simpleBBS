@@ -47,10 +47,7 @@
             <label for="thread-title">タイトル</label>
             <input type="text" id="thread-title" name="title" value="{{ old.thread.title|default('') }}" required>
         </div>
-        <div class="c-form__row">
-            <label for="thread-author">投稿者</label>
-            <input type="text" id="thread-author" name="author_name" value="{{ old.thread.author_name|default('') }}" required>
-        </div>
+        <div class="c-form__row c-form__row--static">投稿者: <strong>{{ authUser.name }}</strong></div>
         <div class="c-form__row">
             <label for="thread-body">本文</label>
             <textarea id="thread-body" name="body" rows="5" required>{{ old.thread.body|default('') }}</textarea>

@@ -4,6 +4,8 @@ namespace SimpleBBS\Http;
 
 class Request
 {
+    private ?\SimpleBBS\Auth\User $user = null;
+
     public function __construct(
         private readonly string $method,
         private readonly array $query,
@@ -41,5 +43,15 @@ class Request
             'query' => $this->query,
             'body' => $this->body,
         ];
+    }
+
+    public function setUser(?\SimpleBBS\Auth\User $user): void
+    {
+        $this->user = $user;
+    }
+
+    public function user(): ?\SimpleBBS\Auth\User
+    {
+        return $this->user;
     }
 }

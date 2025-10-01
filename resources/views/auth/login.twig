@@ -1,0 +1,27 @@
+{% extends 'base.twig' %}
+
+{% block title %}ログイン | simpleBBS{% endblock %}
+
+{% block content %}
+<section class="c-panel">
+    <h2 class="c-panel__title">ログインが必要です</h2>
+    {% if errors is not empty %}
+        <div class="c-alert">
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if login.message is defined %}
+        <p>{{ login.message }}</p>
+    {% endif %}
+
+    {% if login.loginRoute is defined %}
+        <p>Googleアカウントでログインしてください。</p>
+        <a href="{{ login.loginRoute }}" class="c-button">Googleでログイン</a>
+    {% endif %}
+</section>
+{% endblock %}

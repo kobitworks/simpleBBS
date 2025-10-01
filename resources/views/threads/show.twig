@@ -42,10 +42,7 @@
         </div>
     {% endif %}
     <form method="post" action="?route=threads.posts.store&slug={{ board.slug }}&thread={{ thread.id }}" class="c-form">
-        <div class="c-form__row">
-            <label for="post-author">投稿者</label>
-            <input type="text" id="post-author" name="author_name" value="{{ old.author_name|default('') }}" required>
-        </div>
+        <div class="c-form__row c-form__row--static">投稿者: <strong>{{ authUser.name }}</strong></div>
         <div class="c-form__row">
             <label for="post-body">本文</label>
             <textarea id="post-body" name="body" rows="5" required>{{ old.body|default('') }}</textarea>
