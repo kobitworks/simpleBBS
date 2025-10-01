@@ -31,22 +31,22 @@ class Config
     {
         $settings = [];
 
-        $requireLogin = getenv('SIMPLEBBS_REQUIRE_LOGIN');
+        $requireLogin = self::getEnvValue(['MUST_LOGIN', 'SIMPLEBBS_REQUIRE_LOGIN']);
         if ($requireLogin !== false) {
             $settings['require_login'] = self::toBool($requireLogin);
         }
 
-        $allowAnonymous = getenv('SIMPLEBBS_ALLOW_ANONYMOUS_POST');
+        $allowAnonymous = self::getEnvValue(['ANONYMOUS_POST', 'SIMPLEBBS_ALLOW_ANONYMOUS_POST']);
         if ($allowAnonymous !== false) {
             $settings['allow_anonymous_posting'] = self::toBool($allowAnonymous);
         }
 
-        $allowBoardCreation = getenv('SIMPLEBBS_ALLOW_USER_BOARD_CREATION');
+        $allowBoardCreation = self::getEnvValue(['USER_BOARD_CREATE', 'SIMPLEBBS_ALLOW_USER_BOARD_CREATION']);
         if ($allowBoardCreation !== false) {
             $settings['allow_user_board_creation'] = self::toBool($allowBoardCreation);
         }
 
-        $storagePath = getenv('SIMPLEBBS_STORAGE_PATH');
+        $storagePath = self::getEnvValue(['STORAGE_PATH', 'SIMPLEBBS_STORAGE_PATH']);
         if ($storagePath !== false) {
             $settings['storage_path'] = $storagePath;
         }
@@ -137,5 +137,20 @@ class Config
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;
         }
+    }
+
+    /**
+     * @param string[] $keys
+     */
+    private static function getEnvValue(array $keys): string|false
+    {
+        foreach ($keys as $key) {
+            $value = getenv($key);
+            if ($value !== false) {
+                return $value;
+            }
+        }
+
+        return false;
     }
 }
