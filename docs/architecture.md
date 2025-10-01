@@ -67,7 +67,7 @@ docs/                   ... ドキュメント
 
 ## 組み込み手順概要
 1. `composer require simplebbs/simple-bbs` でパッケージを導入。(開発中はローカルパス指定も可能)
-2. `public/index.php` を Web ルートに配置し、`.storage/` ディレクトリへの書き込み権限を付与するか、環境変数 `SIMPLEBBS_STORAGE_PATH`
+2. `public/index.php` を Web ルートに配置し、`.storage/` ディレクトリへの書き込み権限を付与するか、環境変数 `STORAGE_PATH`
    で別のディレクトリを指定します。
 3. 必要に応じて Twig テンプレートや CSS をカスタマイズしてサイトデザインと統一。
 
