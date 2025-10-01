@@ -2,9 +2,9 @@
 
 namespace SimpleBBS\Controllers;
 
+use SimpleBBS\Boards\BoardManager;
 use SimpleBBS\Http\Request;
-use SimpleBBS\Services\BoardService;
-use SimpleBBS\Services\ThreadService;
+use SimpleBBS\Threads\ThreadManager;
 use InvalidArgumentException;
 use Twig\Environment;
 
@@ -12,14 +12,14 @@ class BoardController
 {
     public function __construct(
         private readonly Environment $view,
-        private readonly BoardService $boardService,
-        private readonly ThreadService $threadService
+        private readonly BoardManager $boardManager,
+        private readonly ThreadManager $threadManager
     ) {
     }
 
     public function index(Request $request): string
     {
-        $boards = $this->boardService->listBoards();
+        $boards = $this->boardManager->listBoards();
 
         return $this->view->render('boards/index.twig', [
             'boards' => $boards,
@@ -30,7 +30,7 @@ class BoardController
     public function store(Request $request): void
     {
         try {
-            $board = $this->boardService->createBoard(
+            $board = $this->boardManager->createBoard(
                 (string)$request->input('title'),
                 $request->input('slug'),
                 $request->input('description')
@@ -39,7 +39,7 @@ class BoardController
             header('Location: ?route=boards.show&slug=' . urlencode($board['slug']));
             exit;
         } catch (InvalidArgumentException $exception) {
-            $boards = $this->boardService->listBoards();
+            $boards = $this->boardManager->listBoards();
             echo $this->view->render('boards/index.twig', [
                 'boards' => $boards,
                 'errors' => [$exception->getMessage()],
@@ -55,8 +55,8 @@ class BoardController
     public function show(Request $request): string
     {
         $slug = (string)$request->query('slug');
-        $board = $this->boardService->getBoard($slug);
-        $threads = $this->threadService->listThreads($board['slug']);
+        $board = $this->boardManager->getBoard($slug);
+        $threads = $this->threadManager->listThreads($board['slug']);
 
         return $this->view->render('boards/show.twig', [
             'board' => $board,

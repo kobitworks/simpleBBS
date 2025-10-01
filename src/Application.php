@@ -6,11 +6,6 @@ use SimpleBBS\Controllers\BoardController;
 use SimpleBBS\Controllers\ThreadController;
 use SimpleBBS\Core\Router;
 use SimpleBBS\Http\Request;
-use SimpleBBS\Repositories\BoardRepository;
-use SimpleBBS\Repositories\ThreadRepository;
-use SimpleBBS\Services\BoardService;
-use SimpleBBS\Services\ThreadService;
-use SimpleBBS\Support\DatabaseManager;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -19,14 +14,17 @@ class Application
     private Router $router;
     private Environment $view;
     private string $viewsPath;
+    private SimpleBBS $bbs;
 
     public function __construct(
         private readonly string $storagePath,
         ?Environment $view = null,
-        ?string $viewsPath = null
+        ?string $viewsPath = null,
+        ?SimpleBBS $bbs = null
     ) {
         $this->viewsPath = $viewsPath ?? dirname(__DIR__) . '/resources/views';
         $this->view = $view ?? $this->createDefaultView();
+        $this->bbs = $bbs ?? SimpleBBS::create($this->storagePath);
 
         $this->bootstrap();
     }
@@ -34,18 +32,26 @@ class Application
     public static function create(
         ?string $storagePath = null,
         ?Environment $view = null,
-        ?string $viewsPath = null
+        ?string $viewsPath = null,
+        ?SimpleBBS $bbs = null
     ): self {
         $packageRoot = dirname(__DIR__);
         $storagePath ??= $packageRoot . '/.storage';
         $viewsPath ??= $packageRoot . '/resources/views';
 
-        return new self($storagePath, $view, $viewsPath);
+        $bbs ??= SimpleBBS::create($storagePath);
+
+        return new self($storagePath, $view, $viewsPath, $bbs);
     }
 
     public function getRouter(): Router
     {
         return $this->router;
+    }
+
+    public function getBbs(): SimpleBBS
+    {
+        return $this->bbs;
     }
 
     public function handle(Request $request): void
@@ -70,16 +76,16 @@ class Application
 
     private function bootstrap(): void
     {
-        $databaseManager = new DatabaseManager($this->storagePath);
-
-        $boardRepository = new BoardRepository($databaseManager);
-        $threadRepository = new ThreadRepository($databaseManager);
-
-        $boardService = new BoardService($boardRepository);
-        $threadService = new ThreadService($threadRepository);
-
-        $boardController = new BoardController($this->view, $boardService, $threadService);
-        $threadController = new ThreadController($this->view, $boardService, $threadService);
+        $boardController = new BoardController(
+            $this->view,
+            $this->bbs->boards(),
+            $this->bbs->threads()
+        );
+        $threadController = new ThreadController(
+            $this->view,
+            $this->bbs->boards(),
+            $this->bbs->threads()
+        );
 
         $router = new Router();
         $router->get('boards.index', [$boardController, 'index']);

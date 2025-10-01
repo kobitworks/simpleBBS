@@ -17,6 +17,28 @@ composer require simplebbs/simple-bbs
 `public/index.php` では `SimpleBBS\\Application` を生成し、HTTP リクエストを処理します。設置先で Twig のカスタマイズを行いたい場合は、
 `SimpleBBS\\Application::create()` の第 2 引数以降に Twig Environment やビューのパスを渡してください。
 
+## 他システムからの利用
+
+`SimpleBBS\\SimpleBBS` を生成することで、ボードやスレッド操作用のファサードクラスに直接アクセスできます。
+
+```php
+use SimpleBBS\SimpleBBS;
+
+$bbs = SimpleBBS::create('/path/to/storage');
+
+// ボード一覧を取得
+$boards = $bbs->boards()->listBoards();
+
+// スレッドの作成
+$threadId = $bbs->threads()->createThread('general', 'はじめまして', '管理人', 'よろしくお願いします。');
+
+// ストレージに関する情報へアクセス
+$storagePath = $bbs->system()->storagePath();
+```
+
+`SimpleBBS\\Application::create()` に `SimpleBBS` インスタンスを渡すことで、Web アプリケーションと他システムで同じコンポーネン
+ト構成を共有することも可能です。
+
 ## 必要条件
 - PHP 8.1 以上
 - SQLite3 拡張
