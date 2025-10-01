@@ -11,7 +11,7 @@ composer require simplebbs/simple-bbs
 
 ## セットアップ
 1. Web ルートを `vendor/simplebbs/simple-bbs/public` に向けるか、`public/` ディレクトリの内容を任意の公開ディレクトリに配置します。
-2. `storage/` ディレクトリを BBS のデータ格納用に書き込み可能へ設定するか、環境変数 `SIMPLEBBS_STORAGE_PATH` で任意の書き込み先パスを指定します。
+2. `.storage/` ディレクトリを BBS のデータ格納用に書き込み可能へ設定するか、環境変数 `SIMPLEBBS_STORAGE_PATH` で任意の書き込み先パスを指定します。
 3. ブラウザでアクセスすると、ボード作成からスレッド・投稿まで利用できます。
 
 `public/index.php` では `SimpleBBS\\Application` を生成し、HTTP リクエストを処理します。設置先で Twig のカスタマイズを行いたい場合は、

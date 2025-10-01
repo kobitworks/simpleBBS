@@ -37,7 +37,7 @@ class Application
         ?string $viewsPath = null
     ): self {
         $packageRoot = dirname(__DIR__);
-        $storagePath ??= $packageRoot . '/storage';
+        $storagePath ??= $packageRoot . '/.storage';
         $viewsPath ??= $packageRoot . '/resources/views';
 
         return new self($storagePath, $view, $viewsPath);
