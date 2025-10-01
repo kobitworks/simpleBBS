@@ -41,7 +41,11 @@ class Config
             $settings['allow_anonymous_posting'] = self::toBool($allowAnonymous);
         }
 
-        $allowBoardCreation = getenv('SIMPLEBBS_ALLOW_USER_BOARD_CREATION');
+        $allowBoardCreation = getenv('SIMPLEBBS_ALLOW_BOARD_CREATE');
+        if ($allowBoardCreation === false) {
+            $allowBoardCreation = getenv('SIMPLEBBS_ALLOW_USER_BOARD_CREATION');
+        }
+
         if ($allowBoardCreation !== false) {
             $settings['allow_user_board_creation'] = self::toBool($allowBoardCreation);
         }
