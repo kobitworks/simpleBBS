@@ -6,6 +6,7 @@ use SimpleBBS\Boards\BoardManager;
 use SimpleBBS\Http\Request;
 use SimpleBBS\Threads\ThreadManager;
 use InvalidArgumentException;
+use RuntimeException;
 use Twig\Environment;
 
 class ThreadController
@@ -21,12 +22,17 @@ class ThreadController
     {
         $slug = (string)$request->query('slug');
         $board = $this->boardManager->getBoard($slug);
+        $user = $request->user();
+
+        if (!$user) {
+            throw new RuntimeException('ログインが必要です。');
+        }
 
         try {
             $threadId = $this->threadManager->createThread(
                 $board['slug'],
                 (string)$request->input('title'),
-                (string)$request->input('author_name'),
+                $user->getName(),
                 (string)$request->input('body')
             );
 
@@ -41,7 +47,6 @@ class ThreadController
                 'old' => [
                     'thread' => [
                         'title' => $request->input('title'),
-                        'author_name' => $request->input('author_name'),
                         'body' => $request->input('body'),
                     ],
                 ],
@@ -69,12 +74,17 @@ class ThreadController
         $slug = (string)$request->query('slug');
         $threadId = (int)$request->query('thread');
         $board = $this->boardManager->getBoard($slug);
+        $user = $request->user();
+
+        if (!$user) {
+            throw new RuntimeException('ログインが必要です。');
+        }
 
         try {
             $this->threadManager->addPost(
                 $board['slug'],
                 $threadId,
-                (string)$request->input('author_name'),
+                $user->getName(),
                 (string)$request->input('body')
             );
 
@@ -87,7 +97,6 @@ class ThreadController
                 'thread' => $thread,
                 'errors' => [$exception->getMessage()],
                 'old' => [
-                    'author_name' => $request->input('author_name'),
                     'body' => $request->input('body'),
                 ],
             ]);

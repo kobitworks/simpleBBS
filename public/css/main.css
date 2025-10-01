@@ -39,6 +39,20 @@ a:hover {
     margin: 0 auto;
 }
 
+.l-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.l-header__brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
 .l-header__title {
     margin: 0;
     font-size: 1.8rem;
@@ -47,6 +61,21 @@ a:hover {
 .l-header__description {
     margin: 0.5rem 0 0;
     color: var(--color-muted);
+}
+
+.l-header__user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+.l-header__user-name {
+    font-weight: 600;
+}
+
+.l-header__logout {
+    margin: 0;
 }
 
 .l-main {
@@ -102,6 +131,14 @@ a:hover {
     gap: 0.5rem;
 }
 
+.c-form__row--static {
+    font-weight: 600;
+}
+
+.c-form__row--static strong {
+    color: var(--color-primary);
+}
+
 .c-form label {
     font-weight: 600;
 }
@@ -131,6 +168,13 @@ a:hover {
 
 .c-button:hover {
     opacity: 0.9;
+}
+
+.c-button--link {
+    background: transparent;
+    color: var(--color-primary);
+    padding: 0;
+    border: none;
 }
 
 .c-board-list,

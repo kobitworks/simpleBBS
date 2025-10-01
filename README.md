@@ -17,6 +17,26 @@ composer require simplebbs/simple-bbs
 `public/index.php` では `SimpleBBS\\Application` を生成し、HTTP リクエストを処理します。設置先で Twig のカスタマイズを行いたい場合は、
 `SimpleBBS\\Application::create()` の第 2 引数以降に Twig Environment やビューのパスを渡してください。
 
+### 認証設定
+
+simpleBBS はログイン必須です。スタンドアロンで利用する場合は Google OAuth クライアントを用意し、以下の環境変数を設定してください。
+
+- `SIMPLEBBS_GOOGLE_CLIENT_ID`
+- `SIMPLEBBS_GOOGLE_CLIENT_SECRET`
+- `SIMPLEBBS_GOOGLE_REDIRECT_URI` (例: `https://example.com/index.php?route=auth.callback`)
+
+他システムに組み込んで利用する場合は、`SimpleBBS\Auth\PreAuthenticatedAuthenticator` を利用して認証済みユーザー情報を渡してください。
+
+```php
+use SimpleBBS\Auth\PreAuthenticatedAuthenticator;
+use SimpleBBS\Auth\User;
+use SimpleBBS\Application;
+
+$user = new User('123', '山田 太郎', 'taro@example.com');
+$authenticator = new PreAuthenticatedAuthenticator($user);
+$app = Application::create(authenticator: $authenticator);
+```
+
 ## 他システムからの利用
 
 `SimpleBBS\\SimpleBBS` を生成することで、ボードやスレッド操作用のファサードクラスに直接アクセスできます。

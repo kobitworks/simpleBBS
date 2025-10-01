@@ -7,6 +7,7 @@ SQLite データベースを持つ構成で、別サイトへの組み込みを�
 ## ディレクトリ構成
 ```
 src/
+  Auth/                 ... 認証ユーザーや認証方式を管理
   Application.php        ... 依存解決とルーティングを担うエントリポイント
   Controllers/          ... HTTP コントローラ層
   Core/                 ... ルーターなどコアコンポーネント
@@ -44,6 +45,11 @@ docs/                   ... ドキュメント
 - `boards/index.twig` でボード一覧・作成フォーム、`boards/show.twig` でスレッド一覧・作成フォーム、`threads/show.twig` で投稿表示
 と投稿フォームを表示します。
 - フロントエンドは `public/css/main.css` の軽量スタイルのみを使用。
+
+## 認証
+- `Auth\AuthManager` がリクエストごとの認証状態を判定し、Twig へログイン中のユーザー情報を共有します。
+- スタンドアロン利用時は `Auth\GoogleAuthenticator` が Google OAuth 2.0 を利用してセッションにユーザー情報を保存します。
+- 他システム組み込み時は `Auth\PreAuthenticatedAuthenticator` により外部で認証済みの `Auth\User` を注入できます。
 
 ## ルーティング
 `SimpleBBS\Application` が `Router` に以下のルートを定義します。
