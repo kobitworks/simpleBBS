@@ -19,6 +19,11 @@ class DatabaseManager
         }
     }
 
+    public function getDataPath(): string
+    {
+        return $this->dataPath;
+    }
+
     public function getSystemConnection(): PDO
     {
         if ($this->systemConnection instanceof PDO) {
