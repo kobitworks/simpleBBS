@@ -7,7 +7,7 @@ class Config
     private const DEFAULTS = [
         'require_login' => false,
         'allow_anonymous_posting' => true,
-        'allow_user_board_creation' => true,
+        'allow_user_board_creation' => false,
     ];
 
     /**
@@ -31,25 +31,27 @@ class Config
     {
         $settings = [];
 
-        $requireLogin = getenv('SIMPLEBBS_REQUIRE_LOGIN');
-        if ($requireLogin !== false) {
+        $requireLogin = self::env('LOGIN_REQUIRED', 'SIMPLEBBS_REQUIRE_LOGIN');
+        if ($requireLogin !== null) {
             $settings['require_login'] = self::toBool($requireLogin);
         }
 
-        $allowAnonymous = getenv('SIMPLEBBS_ALLOW_ANONYMOUS_POST');
-        if ($allowAnonymous !== false) {
+        $allowAnonymous = self::env('ALLOW_GUEST_POSTS', 'SIMPLEBBS_ALLOW_ANONYMOUS_POST');
+        if ($allowAnonymous !== null) {
             $settings['allow_anonymous_posting'] = self::toBool($allowAnonymous);
         }
 
-        $allowBoardCreation = getenv('SIMPLEBBS_ALLOW_USER_BOARD_CREATION');
-        if ($allowBoardCreation !== false) {
+        $allowBoardCreation = self::env('ALLOW_BOARD_CREATION', 'SIMPLEBBS_ALLOW_USER_BOARD_CREATION');
+        if ($allowBoardCreation !== null) {
             $settings['allow_user_board_creation'] = self::toBool($allowBoardCreation);
         }
 
-        $storagePath = getenv('SIMPLEBBS_STORAGE_PATH');
-        if ($storagePath !== false) {
+        $storagePath = self::env('STORAGE_PATH', 'SIMPLEBBS_STORAGE_PATH');
+        if ($storagePath !== null) {
             $settings['storage_path'] = $storagePath;
         }
+
+        $settings = self::enforceBoardCreationRequiresLogin($settings);
 
         return new self($settings);
     }
@@ -93,6 +95,38 @@ class Config
         }
 
         return in_array($normalized, ['1', 'true', 'on', 'yes'], true);
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @return array<string, mixed>
+     */
+    private static function enforceBoardCreationRequiresLogin(array $settings): array
+    {
+        $allowsBoardCreation = $settings['allow_user_board_creation']
+            ?? self::DEFAULTS['allow_user_board_creation'];
+
+        $requiresLogin = $settings['require_login']
+            ?? self::DEFAULTS['require_login'];
+
+        if ($allowsBoardCreation && !$requiresLogin) {
+            $settings['allow_user_board_creation'] = false;
+        }
+
+        return $settings;
+    }
+
+    private static function env(string $name, string $fallback): ?string
+    {
+        $value = getenv($name);
+
+        if ($value !== false) {
+            return $value;
+        }
+
+        $legacy = getenv($fallback);
+
+        return $legacy === false ? null : $legacy;
     }
 
     private static function applyEnvFile(string $envPath): void

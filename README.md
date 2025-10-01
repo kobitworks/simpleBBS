@@ -11,7 +11,7 @@ composer require simplebbs/simple-bbs
 
 ## セットアップ
 1. Web ルートを `vendor/simplebbs/simple-bbs/public` に向けるか、`public/` ディレクトリの内容を任意の公開ディレクトリに配置します。
-2. `.storage/` ディレクトリを BBS のデータ格納用に書き込み可能へ設定するか、`.env` (または環境変数 `SIMPLEBBS_STORAGE_PATH`) で任意の書き込み先パスを指定します。設定例は `sample.env` を参照してください。
+2. `.storage/` ディレクトリを BBS のデータ格納用に書き込み可能へ設定するか、`.env` (または環境変数 `STORAGE_PATH`) で任意の書き込み先パスを指定します。設定例は `sample.env` を参照してください。
 3. ブラウザでアクセスすると、ボード作成からスレッド・投稿まで利用できます。
 
 `public/index.php` では `SimpleBBS\\Application` を生成し、HTTP リクエストを処理します。設置先で Twig のカスタマイズを行いたい場合は、
@@ -21,12 +21,16 @@ composer require simplebbs/simple-bbs
 
 `.env` または環境変数で以下の項目を設定できます。未指定の場合は既定値が使用されます。
 
-- `SIMPLEBBS_REQUIRE_LOGIN` (既定値: `false`)
+- `LOGIN_REQUIRED` (既定値: `false`)
   - `true` の場合はログイン必須となり、認証の設定がないとアプリケーションが起動しません。
-- `SIMPLEBBS_ALLOW_ANONYMOUS_POST` (既定値: `true`)
+- `ALLOW_GUEST_POSTS` (既定値: `true`)
   - 匿名でのスレッド作成・投稿を許可します。`false` にすると未ログイン時は投稿できません。
-- `SIMPLEBBS_ALLOW_USER_BOARD_CREATION` (既定値: `true`)
-  - ユーザーによる新規ボード作成を許可します。`false` にすると作成フォームが表示されません。設定値に関わらず、ボード作成を行うにはログインが必要です。
+- `ALLOW_BOARD_CREATION` (既定値: `false`)
+  - ログイン済みユーザーによる新規ボード作成を許可します。ログインを無効にしている場合は自動的にボード作成も無効になります。
+- `STORAGE_PATH` (既定値: プロジェクト直下の `.storage` ディレクトリ)
+  - BBS のデータを保存するディレクトリパスを指定します。
+
+互換性のため、旧名称の `SIMPLEBBS_REQUIRE_LOGIN`、`SIMPLEBBS_ALLOW_ANONYMOUS_POST`、`SIMPLEBBS_ALLOW_USER_BOARD_CREATION`、`SIMPLEBBS_STORAGE_PATH` も読み込まれます。
 
 ### 認証設定
 
