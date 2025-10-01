@@ -41,6 +41,16 @@ class BoardController
             return;
         }
 
+        if ($request->user() === null) {
+            http_response_code(403);
+            $boards = $this->boardManager->listBoards();
+            echo $this->view->render('boards/index.twig', [
+                'boards' => $boards,
+                'errors' => ['ボードを作成するにはログインが必要です。'],
+            ]);
+            return;
+        }
+
         try {
             $board = $this->boardManager->createBoard(
                 (string)$request->input('title'),
