@@ -41,15 +41,26 @@
             </ul>
         </div>
     {% endif %}
-    <form method="post" action="?route=threads.posts.store&slug={{ board.slug }}&thread={{ thread.id }}" class="c-form">
-        <div class="c-form__row c-form__row--static">投稿者: <strong>{{ authUser.name }}</strong></div>
-        <div class="c-form__row">
-            <label for="post-body">本文</label>
-            <textarea id="post-body" name="body" rows="5" required>{{ old.body|default('') }}</textarea>
-        </div>
-        <div class="c-form__actions">
-            <button type="submit" class="c-button">送信</button>
-        </div>
-    </form>
+    {% if authUser or features.allowAnonymousPosting %}
+        <form method="post" action="?route=threads.posts.store&slug={{ board.slug }}&thread={{ thread.id }}" class="c-form">
+            {% if authUser %}
+                <div class="c-form__row c-form__row--static">投稿者: <strong>{{ authUser.name }}</strong></div>
+            {% else %}
+                <div class="c-form__row">
+                    <label for="post-author">投稿者名</label>
+                    <input type="text" id="post-author" name="author_name" value="{{ old.author_name|default('') }}" placeholder="未入力の場合は『名無しさん』">
+                </div>
+            {% endif %}
+            <div class="c-form__row">
+                <label for="post-body">本文</label>
+                <textarea id="post-body" name="body" rows="5" required>{{ old.body|default('') }}</textarea>
+            </div>
+            <div class="c-form__actions">
+                <button type="submit" class="c-button">送信</button>
+            </div>
+        </form>
+    {% else %}
+        <p>投稿するにはログインしてください。</p>
+    {% endif %}
 </section>
 {% endblock %}

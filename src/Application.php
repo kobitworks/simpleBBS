@@ -5,11 +5,13 @@ namespace SimpleBBS;
 use SimpleBBS\Auth\AuthManager;
 use SimpleBBS\Auth\AuthenticatorInterface;
 use SimpleBBS\Auth\GoogleAuthenticator;
+use SimpleBBS\Auth\GuestAuthenticator;
 use SimpleBBS\Controllers\AuthController;
 use SimpleBBS\Controllers\BoardController;
 use SimpleBBS\Controllers\ThreadController;
 use SimpleBBS\Core\Router;
 use SimpleBBS\Http\Request;
+use SimpleBBS\Support\Config;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -20,6 +22,7 @@ class Application
     private string $viewsPath;
     private SimpleBBS $bbs;
     private AuthManager $authManager;
+    private Config $config;
     /** @var string[] */
     private array $publicRoutes = [];
 
@@ -28,12 +31,18 @@ class Application
         ?Environment $view = null,
         ?string $viewsPath = null,
         ?SimpleBBS $bbs = null,
-        ?AuthManager $authManager = null
+        ?AuthManager $authManager = null,
+        ?Config $config = null
     ) {
         $this->viewsPath = $viewsPath ?? dirname(__DIR__) . '/resources/views';
         $this->view = $view ?? $this->createDefaultView();
         $this->bbs = $bbs ?? SimpleBBS::create($this->storagePath);
+        $this->config = $config ?? Config::fromEnvironment();
         $this->authManager = $authManager ?? $this->createDefaultAuthManager();
+
+        if ($this->config->requiresLogin() && !$this->authManager->supportsLoginRedirect()) {
+            throw new \RuntimeException('ログイン必須ですが、有効な認証設定が見つかりません。');
+        }
 
         $this->bootstrap();
     }
@@ -43,7 +52,8 @@ class Application
         ?Environment $view = null,
         ?string $viewsPath = null,
         ?SimpleBBS $bbs = null,
-        ?AuthenticatorInterface $authenticator = null
+        ?AuthenticatorInterface $authenticator = null,
+        ?Config $config = null
     ): self {
         $packageRoot = dirname(__DIR__);
         $storagePath ??= $packageRoot . '/.storage';
@@ -57,7 +67,7 @@ class Application
             $authManager = new AuthManager($authenticator);
         }
 
-        return new self($storagePath, $view, $viewsPath, $bbs, $authManager);
+        return new self($storagePath, $view, $viewsPath, $bbs, $authManager, $config);
     }
 
     public function getRouter(): Router
@@ -77,7 +87,11 @@ class Application
         $this->view->addGlobal('authUser', $user);
         $request->setUser($user);
 
-        if (!$user && !in_array($route, $this->publicRoutes, true)) {
+        if (
+            $this->config->requiresLogin()
+            && !$user
+            && !in_array($route, $this->publicRoutes, true)
+        ) {
             header('Location: ?route=auth.login');
             exit;
         }
@@ -103,12 +117,14 @@ class Application
         $boardController = new BoardController(
             $this->view,
             $this->bbs->boards(),
-            $this->bbs->threads()
+            $this->bbs->threads(),
+            $this->config
         );
         $threadController = new ThreadController(
             $this->view,
             $this->bbs->boards(),
-            $this->bbs->threads()
+            $this->bbs->threads(),
+            $this->config
         );
         $authController = new AuthController($this->view, $this->authManager);
 
@@ -134,6 +150,13 @@ class Application
         $router->post('threads.posts.store', [$threadController, 'storePost']);
 
         $this->router = $router;
+
+        $this->view->addGlobal('features', [
+            'requireLogin' => $this->config->requiresLogin(),
+            'allowAnonymousPosting' => $this->config->allowsAnonymousPosting(),
+            'allowUserBoardCreation' => $this->config->allowsUserBoardCreation(),
+        ]);
+        $this->view->addGlobal('authSupportsLogin', $this->authManager->supportsLoginRedirect());
     }
 
     private function createDefaultView(): Environment
@@ -167,6 +190,14 @@ class Application
             return new AuthManager(new GoogleAuthenticator($clientId, $clientSecret, $redirectUri));
         }
 
-        throw new \RuntimeException('認証が設定されていません。Googleログインを利用する場合は環境変数 SIMPLEBBS_GOOGLE_CLIENT_ID, SIMPLEBBS_GOOGLE_CLIENT_SECRET, SIMPLEBBS_GOOGLE_REDIRECT_URI を設定するか、AuthenticatorInterface を指定してください。');
+        if ($this->config->requiresLogin()) {
+            throw new \RuntimeException(
+                '認証が設定されていません。Googleログインを利用する場合は '
+                . 'SIMPLEBBS_GOOGLE_CLIENT_ID, SIMPLEBBS_GOOGLE_CLIENT_SECRET, SIMPLEBBS_GOOGLE_REDIRECT_URI '
+                . 'を設定するか、AuthenticatorInterface を指定してください。'
+            );
+        }
+
+        return new AuthManager(new GuestAuthenticator());
     }
 }

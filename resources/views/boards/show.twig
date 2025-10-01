@@ -42,19 +42,30 @@
             </ul>
         </div>
     {% endif %}
-    <form method="post" action="?route=threads.store&slug={{ board.slug }}" class="c-form">
-        <div class="c-form__row">
-            <label for="thread-title">タイトル</label>
-            <input type="text" id="thread-title" name="title" value="{{ old.thread.title|default('') }}" required>
-        </div>
-        <div class="c-form__row c-form__row--static">投稿者: <strong>{{ authUser.name }}</strong></div>
-        <div class="c-form__row">
-            <label for="thread-body">本文</label>
-            <textarea id="thread-body" name="body" rows="5" required>{{ old.thread.body|default('') }}</textarea>
-        </div>
-        <div class="c-form__actions">
-            <button type="submit" class="c-button">作成</button>
-        </div>
-    </form>
+    {% if authUser or features.allowAnonymousPosting %}
+        <form method="post" action="?route=threads.store&slug={{ board.slug }}" class="c-form">
+            <div class="c-form__row">
+                <label for="thread-title">タイトル</label>
+                <input type="text" id="thread-title" name="title" value="{{ old.thread.title|default('') }}" required>
+            </div>
+            {% if authUser %}
+                <div class="c-form__row c-form__row--static">投稿者: <strong>{{ authUser.name }}</strong></div>
+            {% else %}
+                <div class="c-form__row">
+                    <label for="thread-author">投稿者名</label>
+                    <input type="text" id="thread-author" name="author_name" value="{{ old.thread.author_name|default('') }}" placeholder="未入力の場合は『名無しさん』">
+                </div>
+            {% endif %}
+            <div class="c-form__row">
+                <label for="thread-body">本文</label>
+                <textarea id="thread-body" name="body" rows="5" required>{{ old.thread.body|default('') }}</textarea>
+            </div>
+            <div class="c-form__actions">
+                <button type="submit" class="c-button">作成</button>
+            </div>
+        </form>
+    {% else %}
+        <p>スレッドを作成するにはログインしてください。</p>
+    {% endif %}
 </section>
 {% endblock %}

@@ -4,6 +4,7 @@ namespace SimpleBBS\Controllers;
 
 use SimpleBBS\Boards\BoardManager;
 use SimpleBBS\Http\Request;
+use SimpleBBS\Support\Config;
 use SimpleBBS\Threads\ThreadManager;
 use InvalidArgumentException;
 use Twig\Environment;
@@ -13,7 +14,8 @@ class BoardController
     public function __construct(
         private readonly Environment $view,
         private readonly BoardManager $boardManager,
-        private readonly ThreadManager $threadManager
+        private readonly ThreadManager $threadManager,
+        private readonly Config $config
     ) {
     }
 
@@ -29,6 +31,16 @@ class BoardController
 
     public function store(Request $request): void
     {
+        if (!$this->config->allowsUserBoardCreation()) {
+            http_response_code(403);
+            $boards = $this->boardManager->listBoards();
+            echo $this->view->render('boards/index.twig', [
+                'boards' => $boards,
+                'errors' => ['現在は新しいボードを作成できません。'],
+            ]);
+            return;
+        }
+
         try {
             $board = $this->boardManager->createBoard(
                 (string)$request->input('title'),

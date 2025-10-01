@@ -55,7 +55,8 @@ class AuthController
     public function logout(Request $request): void
     {
         $this->authManager->logout($request);
-        header('Location: ?route=auth.login');
+        $target = $this->authManager->supportsLoginRedirect() ? '?route=auth.login' : '?route=boards.index';
+        header('Location: ' . $target);
         exit;
     }
 }
