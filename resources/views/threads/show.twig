@@ -1,0 +1,58 @@
+{% extends 'base.twig' %}
+
+{% block title %}{{ thread.title }} | {{ board.title }} | simpleBBS{% endblock %}
+
+{% block content %}
+<nav class="c-breadcrumb">
+    <a href="?route=boards.index">ボード一覧</a>
+    <span>/</span>
+    <a href="?route=boards.show&slug={{ board.slug }}">{{ board.title }}</a>
+    <span>/</span>
+    <span>{{ thread.title }}</span>
+</nav>
+
+<section class="c-panel">
+    <h2 class="c-panel__title">{{ thread.title }}</h2>
+    {% if thread.posts is empty %}
+        <p>まだ投稿がありません。</p>
+    {% else %}
+        <ul class="c-post-list">
+            {% for post in thread.posts %}
+                <li class="c-post-list__item">
+                    <div class="c-post-list__meta">
+                        <span class="c-post-list__author">{{ post.author_name }}</span>
+                        <span class="c-post-list__date">{{ post.created_at|date('Y-m-d H:i') }}</span>
+                    </div>
+                    <div class="c-post-list__body">{{ post.body|nl2br }}</div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
+
+<section class="c-panel">
+    <h2 class="c-panel__title">投稿する</h2>
+    {% if errors is not empty %}
+        <div class="c-alert">
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <form method="post" action="?route=threads.posts.store&slug={{ board.slug }}&thread={{ thread.id }}" class="c-form">
+        <div class="c-form__row">
+            <label for="post-author">投稿者</label>
+            <input type="text" id="post-author" name="author_name" value="{{ old.author_name|default('') }}" required>
+        </div>
+        <div class="c-form__row">
+            <label for="post-body">本文</label>
+            <textarea id="post-body" name="body" rows="5" required>{{ old.body|default('') }}</textarea>
+        </div>
+        <div class="c-form__actions">
+            <button type="submit" class="c-button">送信</button>
+        </div>
+    </form>
+</section>
+{% endblock %}
