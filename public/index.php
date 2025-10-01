@@ -4,7 +4,14 @@ use SimpleBBS\Application;
 use SimpleBBS\Http\Request;
 use SimpleBBS\SimpleBBS;
 
-require_once __DIR__ . '/../vendor/autoload.php';
+$composerAutoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($composerAutoload)) {
+    require_once $composerAutoload;
+}
+
+if (!class_exists(SimpleBBS::class)) {
+    require_once __DIR__ . '/../src/autoload.php';
+}
 
 $storagePath = getenv('SIMPLEBBS_STORAGE_PATH') ?: __DIR__ . '/../.storage';
 
