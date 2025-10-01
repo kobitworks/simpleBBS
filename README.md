@@ -26,7 +26,7 @@ composer require simplebbs/simple-bbs
 - `SIMPLEBBS_ALLOW_ANONYMOUS_POST` (既定値: `true`)
   - 匿名でのスレッド作成・投稿を許可します。`false` にすると未ログイン時は投稿できません。
 - `SIMPLEBBS_ALLOW_USER_BOARD_CREATION` (既定値: `true`)
-  - ユーザーによる新規ボード作成を許可します。`false` にすると作成フォームが表示されません。
+  - ユーザーによる新規ボード作成を許可します。`false` にすると作成フォームが表示されません。設定値に関わらず、ボード作成を行うにはログインが必要です。
 
 ### 認証設定
 

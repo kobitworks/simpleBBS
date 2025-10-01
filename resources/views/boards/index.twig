@@ -26,33 +26,37 @@
 
 <section class="c-panel">
     <h2 class="c-panel__title">新規ボード作成</h2>
+    {% if errors is not empty %}
+        <div class="c-alert">
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
     {% if features.allowUserBoardCreation %}
-        {% if errors is not empty %}
-            <div class="c-alert">
-                <ul>
-                    {% for error in errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
+        {% if authUser %}
+            <form method="post" action="?route=boards.store" class="c-form">
+                <div class="c-form__row">
+                    <label for="title">ボード名</label>
+                    <input type="text" id="title" name="title" value="{{ old.title|default('') }}" required>
+                </div>
+                <div class="c-form__row">
+                    <label for="slug">スラッグ (URL識別子)</label>
+                    <input type="text" id="slug" name="slug" value="{{ old.slug|default('') }}" placeholder="未入力の場合はボード名から自動生成">
+                </div>
+                <div class="c-form__row">
+                    <label for="description">説明</label>
+                    <textarea id="description" name="description" rows="3">{{ old.description|default('') }}</textarea>
+                </div>
+                <div class="c-form__actions">
+                    <button type="submit" class="c-button">作成</button>
+                </div>
+            </form>
+        {% else %}
+            <p>ボードを作成するにはログインしてください。</p>
         {% endif %}
-        <form method="post" action="?route=boards.store" class="c-form">
-            <div class="c-form__row">
-                <label for="title">ボード名</label>
-                <input type="text" id="title" name="title" value="{{ old.title|default('') }}" required>
-            </div>
-            <div class="c-form__row">
-                <label for="slug">スラッグ (URL識別子)</label>
-                <input type="text" id="slug" name="slug" value="{{ old.slug|default('') }}" placeholder="未入力の場合はボード名から自動生成">
-            </div>
-            <div class="c-form__row">
-                <label for="description">説明</label>
-                <textarea id="description" name="description" rows="3">{{ old.description|default('') }}</textarea>
-            </div>
-            <div class="c-form__actions">
-                <button type="submit" class="c-button">作成</button>
-            </div>
-        </form>
     {% else %}
         <p>現在は新しいボードの作成が制限されています。</p>
     {% endif %}
