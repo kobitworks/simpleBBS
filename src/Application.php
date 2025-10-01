@@ -15,6 +15,10 @@ use SimpleBBS\Support\Config;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
+if (!class_exists(SimpleBBS::class, false)) {
+    require_once __DIR__ . '/autoload.php';
+}
+
 class Application
 {
     private Router $router;
