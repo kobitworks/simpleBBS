@@ -27,31 +27,6 @@ class AuthController
         ]);
     }
 
-    public function redirect(Request $request): void
-    {
-        if (!$this->authManager->supportsLoginRedirect()) {
-            header('Location: ?route=boards.index');
-            exit;
-        }
-
-        $this->authManager->initiateLogin($request);
-    }
-
-    public function callback(Request $request): void
-    {
-        $user = $this->authManager->handleCallback($request);
-
-        if ($user) {
-            header('Location: ?route=boards.index');
-            exit;
-        }
-
-        echo $this->view->render('auth/login.twig', [
-            'errors' => ['Googleログインに失敗しました。'],
-            'login' => $this->authManager->loginViewData(),
-        ]);
-    }
-
     public function logout(Request $request): void
     {
         $this->authManager->logout($request);
