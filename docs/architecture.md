@@ -48,7 +48,7 @@ docs/                   ... ドキュメント
 
 ## 認証
 - `Auth\AuthManager` がリクエストごとの認証状態を判定し、Twig へログイン中のユーザー情報を共有します。
-- スタンドアロン利用時は `Auth\GoogleAuthenticator` が Google OAuth 2.0 を利用してセッションにユーザー情報を保存します。
+- 既定では `Auth\GuestAuthenticator` によりゲスト利用が前提となっています。ログイン連携が必要な場合は `Auth\AuthenticatorInterface` を実装したクラスを注入してください。
 - 他システム組み込み時は `Auth\PreAuthenticatedAuthenticator` により外部で認証済みの `Auth\User` を注入できます。
 
 ## ルーティング
