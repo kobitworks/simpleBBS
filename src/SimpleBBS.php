@@ -334,6 +334,9 @@ class SimpleBBS
                 updated_at TEXT NOT NULL
             )'
         );
+
+        $this->ensureColumnExists($pdo, 'boards', 'updated_at', 'TEXT');
+        $this->backfillBoardUpdatedAt($pdo);
     }
 
     private function initialiseBoardSchema(PDO $pdo): void
@@ -346,6 +349,9 @@ class SimpleBBS
                 updated_at TEXT NOT NULL
             )'
         );
+
+        $this->ensureColumnExists($pdo, 'threads', 'updated_at', 'TEXT');
+        $this->backfillThreadUpdatedAt($pdo);
 
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS posts (
@@ -370,6 +376,42 @@ class SimpleBBS
             ':body' => $body,
             ':created' => $createdAt,
         ]);
+    }
+
+    private function ensureColumnExists(PDO $pdo, string $table, string $column, string $definition): bool
+    {
+        $statement = $pdo->query('PRAGMA table_info(' . $this->quoteIdentifier($table) . ')');
+        $columns = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($columns as $info) {
+            if (isset($info['name']) && strcasecmp($info['name'], $column) === 0) {
+                return true;
+            }
+        }
+
+        $pdo->exec(sprintf(
+            'ALTER TABLE %s ADD COLUMN %s %s',
+            $this->quoteIdentifier($table),
+            $this->quoteIdentifier($column),
+            $definition
+        ));
+
+        return false;
+    }
+
+    private function backfillBoardUpdatedAt(PDO $pdo): void
+    {
+        $pdo->exec("UPDATE boards SET updated_at = created_at WHERE updated_at IS NULL OR updated_at = ''");
+    }
+
+    private function backfillThreadUpdatedAt(PDO $pdo): void
+    {
+        $pdo->exec("UPDATE threads SET updated_at = created_at WHERE updated_at IS NULL OR updated_at = ''");
+    }
+
+    private function quoteIdentifier(string $identifier): string
+    {
+        return '"' . str_replace('"', '""', $identifier) . '"';
     }
 
     private function touchThread(PDO $connection, int $threadId, string $timestamp): void
