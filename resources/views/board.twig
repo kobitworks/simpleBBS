@@ -1,0 +1,65 @@
+{% extends 'base.twig' %}
+
+{% block title %}{{ board.title }} - simpleBBS{% endblock %}
+
+{% block content %}
+<nav class="c-breadcrumb">
+    <a href="?route=boards" class="c-link">&laquo; ボード一覧へ戻る</a>
+</nav>
+
+<section class="c-section">
+    <h2 class="c-section__title">{{ board.title }}</h2>
+    <p class="c-section__description">{{ board.description|default('説明は登録されていません。') }}</p>
+</section>
+
+{% if errors %}
+    <div class="c-alert">
+        <ul>
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<section class="c-section">
+    <h3 class="c-section__subtitle">スレッド一覧</h3>
+    {% if threads %}
+        <ul class="c-thread-list">
+            {% for thread in threads %}
+                <li class="c-thread-list__item">
+                    <h4 class="c-thread-list__title">
+                        <a href="?route=thread&slug={{ board.slug }}&thread={{ thread.id }}">{{ thread.title }}</a>
+                    </h4>
+                    <p class="c-thread-list__meta">
+                        作成日: {{ thread.created_at }} / 最終更新: {{ thread.updated_at }} / 投稿数: {{ thread.post_count }}
+                    </p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="c-empty">まだスレッドがありません。</p>
+    {% endif %}
+</section>
+
+<section class="c-section">
+    <h3 class="c-section__subtitle">新しいスレッドを作成</h3>
+    <form method="post" action="?route=thread_create&slug={{ board.slug }}" class="c-form">
+        <div class="c-form__field">
+            <label for="thread-title">タイトル</label>
+            <input type="text" id="thread-title" name="title" value="{{ old.thread.title|default('') }}" required>
+        </div>
+        <div class="c-form__field">
+            <label for="thread-author">投稿者名</label>
+            <input type="text" id="thread-author" name="author_name" value="{{ old.thread.author_name|default('') }}" placeholder="未入力の場合は『名無しさん』になります">
+        </div>
+        <div class="c-form__field">
+            <label for="thread-body">本文</label>
+            <textarea id="thread-body" name="body" rows="6" required>{{ old.thread.body|default('') }}</textarea>
+        </div>
+        <div class="c-form__actions">
+            <button type="submit" class="c-button">スレッドを作成</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

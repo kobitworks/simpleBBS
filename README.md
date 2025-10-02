@@ -1,74 +1,58 @@
 # simpleBBS
 
-Composer で導入できる SQLite ベースのシンプルな BBS です。ボード(掲示板)とスレッド(投稿の連なり)に分類され、ボードごとに SQLite
-の DB ファイルを生成します。システム全体を管理するための SQLite DB も別途作成されます。
+SQLite ベースのシンプルな BBS です。ボード(掲示板)とスレッド(投稿の連なり)を扱うための最小限のクラスだけで構成されています。ボードごとに SQLite のデータベースファイルを分けて保存するため、小規模な掲示板を手軽に設置できます。
 
 ## インストール
 
-```bash
+```
 composer require simplebbs/simple-bbs
 ```
 
 ## セットアップ
-1. Web ルートを `vendor/simplebbs/simple-bbs/public` に向けるか、`public/` ディレクトリの内容を任意の公開ディレクトリに配置します。
-2. `.storage/` ディレクトリを BBS のデータ格納用に書き込み可能へ設定するか、`.env` (または環境変数 `STORAGE_PATH`) で任意の書き込み先パスを指定します。設定例は `sample.env` を参照してください。
+1. Web ルートを `vendor/simplebbs/simple-bbs/public` に向けるか、`public/` ディレクトリの内容を任意の公開ディレクトリへ配置します。
+2. `.storage/` ディレクトリを書き込み可能にするか、環境変数 `STORAGE_PATH` (または `.env` の `STORAGE_PATH`) で保存先を指定します。
 3. ブラウザでアクセスすると、ボード作成からスレッド・投稿まで利用できます。
 
-`public/index.php` では `SimpleBBS\\Application` を生成し、HTTP リクエストを処理します。設置先で Twig のカスタマイズを行いたい場合は、
-`SimpleBBS\\Application::create()` の第 2 引数以降に Twig Environment やビューのパスを渡してください。
+`public/index.php` では `SimpleBBS\Application` を生成し、HTTP リクエストを処理します。
 
-### 設定項目
+## クラス概要
+- `SimpleBBS\SimpleBBS`
+  - ボード一覧・詳細、スレッド一覧・詳細、スレッド作成、投稿追加・編集を提供します。
+- `SimpleBBS\Admin`
+  - ボードの新規作成・更新・削除など管理向けの操作を提供します。
+- `SimpleBBS\Application`
+  - クエリパラメータ `route` に基づいて画面を切り替え、Twig テンプレートを描画します。
 
-`.env` または環境変数で以下の項目を設定できます。未指定の場合は既定値が使用されます。
-
-- `LOGIN_REQUIRED` (既定値: `false`)
-  - `true` の場合はログイン必須となり、認証の設定がないとアプリケーションが起動しません。
-- `ALLOW_GUEST_POSTS` (既定値: `true`)
-  - 匿名でのスレッド作成・投稿を許可します。`false` にすると未ログイン時は投稿できません。
-- `ALLOW_BOARD_CREATION` (既定値: `false`)
-  - ログイン済みユーザーによる新規ボード作成を許可します。ログインを無効にしている場合は自動的にボード作成も無効になります。
-- `STORAGE_PATH` (既定値: プロジェクト直下の `.storage` ディレクトリ)
-  - BBS のデータを保存するディレクトリパスを指定します。
-
-互換性のため、旧名称の `SIMPLEBBS_REQUIRE_LOGIN`、`SIMPLEBBS_ALLOW_ANONYMOUS_POST`、`SIMPLEBBS_ALLOW_USER_BOARD_CREATION`、`SIMPLEBBS_STORAGE_PATH` も読み込まれます。
-
-### 認証設定
-
-simpleBBS にはデフォルトのログイン機能は含まれておらず、既定ではゲスト利用のみが可能です。ログイン状態を提供したい場合は、`SimpleBBS\Auth\AuthenticatorInterface` を実装したクラスをアプリケーション生成時に渡してください。
-
-他システムに組み込んで利用する場合は、`SimpleBBS\Auth\PreAuthenticatedAuthenticator` を利用して認証済みユーザー情報を渡せます。
-
-```php
-use SimpleBBS\Auth\PreAuthenticatedAuthenticator;
-use SimpleBBS\Auth\User;
-use SimpleBBS\Application;
-
-$user = new User('123', '山田 太郎', 'taro@example.com');
-$authenticator = new PreAuthenticatedAuthenticator($user);
-$app = Application::create(authenticator: $authenticator);
+## 例: PHP からの直接利用
 ```
-
-## 他システムからの利用
-
-`SimpleBBS\\SimpleBBS` を生成することで、ボードやスレッド操作用のファサードクラスに直接アクセスできます。
-
-```php
+use SimpleBBS\Admin;
 use SimpleBBS\SimpleBBS;
 
-$bbs = SimpleBBS::create('/path/to/storage');
+$storage = __DIR__ . '/bbs-data';
+$admin = new Admin($storage);
+$bbs = new SimpleBBS($storage);
 
-// ボード一覧を取得
-$boards = $bbs->boards()->listBoards();
+// ボード作成
+$board = $admin->createBoard('雑談', 'general', '自由な話題用ボード');
 
-// スレッドの作成
-$threadId = $bbs->threads()->createThread('general', 'はじめまして', '管理人', 'よろしくお願いします。');
+// スレッド作成
+$threadId = $bbs->createThread($board['slug'], 'はじめまして', '管理人', 'よろしくお願いします。');
 
-// ストレージに関する情報へアクセス
-$storagePath = $bbs->system()->storagePath();
+// 投稿追加
+$bbs->addPost($board['slug'], $threadId, '名無しさん', 'こんにちは！');
+
+// 投稿編集
+$thread = $bbs->getThread($board['slug'], $threadId);
+$firstPostId = $thread['posts'][0]['id'];
+$bbs->updatePost($board['slug'], $threadId, $firstPostId, '管理人', '自己紹介スレッドです。');
 ```
 
-`SimpleBBS\\Application::create()` に `SimpleBBS` インスタンスを渡すことで、Web アプリケーションと他システムで同じコンポーネン
-ト構成を共有することも可能です。
+`Application::create()` に `SimpleBBS` や `Admin` を渡すことで、Web アプリケーションと他システムで同じインスタンスを共有できます。
+
+```
+$app = Application::create($storage, viewsPath: __DIR__ . '/templates');
+$app->handle();
+```
 
 ## 必要条件
 - PHP 8.1 以上
@@ -76,4 +60,4 @@ $storagePath = $bbs->system()->storagePath();
 - Composer
 
 ## ドキュメント
-アーキテクチャやディレクトリ構成の詳細は `docs/architecture.md` を参照してください。
+アーキテクチャの詳細は `docs/architecture.md` を参照してください。

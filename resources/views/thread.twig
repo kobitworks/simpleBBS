@@ -1,0 +1,83 @@
+{% extends 'base.twig' %}
+
+{% block title %}{{ thread.title }} - {{ board.title }} - simpleBBS{% endblock %}
+
+{% block content %}
+<nav class="c-breadcrumb">
+    <a href="?route=board&slug={{ board.slug }}" class="c-link">&laquo; {{ board.title }} に戻る</a>
+</nav>
+
+<section class="c-section">
+    <h2 class="c-section__title">{{ thread.title }}</h2>
+    <p class="c-thread__meta">作成日: {{ thread.created_at }} / 最終更新: {{ thread.updated_at }}</p>
+</section>
+
+{% if errors %}
+    <div class="c-alert">
+        <ul>
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<section class="c-section">
+    <h3 class="c-section__subtitle">投稿一覧</h3>
+    {% if thread.posts %}
+        <div class="c-post-list">
+            {% for post in thread.posts %}
+                <article class="c-post">
+                    <header class="c-post__header">
+                        <strong class="c-post__author">{{ post.author_name }}</strong>
+                        <span class="c-post__date">{{ post.created_at }}</span>
+                        <a href="?route=thread&slug={{ board.slug }}&thread={{ thread.id }}&edit={{ post.id }}" class="c-link">編集</a>
+                    </header>
+                    {% if editingPostId == post.id %}
+                        {% set editData = (old.post is defined and old.post.id == post.id) ? old.post : {
+                            'author_name': post.author_name,
+                            'body': post.body,
+                            'id': post.id
+                        } %}
+                        <form method="post" action="?route=post_update&slug={{ board.slug }}&thread={{ thread.id }}&post={{ post.id }}" class="c-form c-form--inline">
+                            <div class="c-form__field">
+                                <label for="edit-author-{{ post.id }}">投稿者名</label>
+                                <input type="text" id="edit-author-{{ post.id }}" name="author_name" value="{{ editData.author_name }}">
+                            </div>
+                            <div class="c-form__field">
+                                <label for="edit-body-{{ post.id }}">本文</label>
+                                <textarea id="edit-body-{{ post.id }}" name="body" rows="5" required>{{ editData.body }}</textarea>
+                            </div>
+                            <div class="c-form__actions">
+                                <button type="submit" class="c-button">更新</button>
+                                <a href="?route=thread&slug={{ board.slug }}&thread={{ thread.id }}" class="c-button c-button--link">キャンセル</a>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="c-post__body">{{ post.body|nl2br }}</div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="c-empty">まだ投稿がありません。</p>
+    {% endif %}
+</section>
+
+<section class="c-section">
+    <h3 class="c-section__subtitle">返信する</h3>
+    <form method="post" action="?route=post_create&slug={{ board.slug }}&thread={{ thread.id }}" class="c-form">
+        <div class="c-form__field">
+            <label for="reply-author">投稿者名</label>
+            <input type="text" id="reply-author" name="author_name" value="{{ old.reply.author_name|default('') }}" placeholder="未入力の場合は『名無しさん』になります">
+        </div>
+        <div class="c-form__field">
+            <label for="reply-body">本文</label>
+            <textarea id="reply-body" name="body" rows="6" required>{{ old.reply.body|default('') }}</textarea>
+        </div>
+        <div class="c-form__actions">
+            <button type="submit" class="c-button">投稿する</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -10,18 +10,8 @@
 <header class="l-header">
     <div class="l-header__inner">
         <div class="l-header__brand">
-            <h1 class="l-header__title"><a href="?route=boards.index">simpleBBS</a></h1>
+            <h1 class="l-header__title"><a href="?route=boards">simpleBBS</a></h1>
             <p class="l-header__description">ボードとスレッドで構成されたシンプルなBBS</p>
-        </div>
-        <div class="l-header__user">
-            {% if authUser %}
-                <span class="l-header__user-name">{{ authUser.name }}</span>
-                <form method="post" action="?route=auth.logout" class="l-header__logout">
-                    <button type="submit" class="c-button c-button--link">ログアウト</button>
-                </form>
-            {% elseif authSupportsLogin %}
-                <a href="?route=auth.login" class="c-button">ログイン</a>
-            {% endif %}
         </div>
     </div>
 </header>

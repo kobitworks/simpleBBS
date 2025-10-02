@@ -1,74 +1,65 @@
 # simpleBBS アーキテクチャ概要
 
 ## 目的
-simpleBBS は、Composer で導入できるシンプルな BBS パッケージです。ボード(掲示板) とスレッド(投稿の連なり) を分離し、ボードごとに
-SQLite データベースを持つ構成で、別サイトへの組み込みを前提としています。
+simpleBBS は SQLite を利用したシンプルな掲示板です。ボード(掲示板) とスレッド(投稿のまとまり) で構成され、最小限のクラス構成で動作します。ボードごとに SQLite ファイルを分けることで、掲示板単位でのデータ分離を実現しています。
 
 ## ディレクトリ構成
 ```
 src/
-  Auth/                 ... 認証ユーザーや認証方式を管理
-  Application.php        ... 依存解決とルーティングを担うエントリポイント
-  Controllers/          ... HTTP コントローラ層
-  Core/                 ... ルーターなどコアコンポーネント
-  Http/                 ... リクエストオブジェクト
-  Repositories/         ... DB アクセス層
-  Services/             ... ドメインロジック
-  Support/              ... 共通ユーティリティ (SQLite 管理など)
+  Application.php   ... HTTP ルーティングと描画を担当するエントリポイント
+  SimpleBBS.php     ... ボード・スレッド・投稿表示と更新のコア機能
+  Admin.php         ... ボード作成や更新など管理向け機能
 public/
-  index.php             ... フロントコントローラ
-  css/, js/             ... アセット
-resources/views/        ... Twig テンプレート
-.storage/               ... SQLite ファイル配置 (system.sqlite と boards/*.sqlite を生成)
-docs/                   ... ドキュメント
+  index.php         ... フロントコントローラ
+  css/              ... スタイルシート
+  js/               ... JavaScript(任意)
+resources/views/    ... Twig テンプレート
+.storage/           ... SQLite ファイル配置先 (自動生成)
 ```
 
 ## データベース
 - **システムDB (`.storage/system.sqlite`)**
-  - `boards` テーブル: ボードのメタ情報(スラッグ、タイトル、説明、作成日時) を保持。
+  - `boards` テーブル: ボードのスラッグ、タイトル、説明、作成・更新日時を保持します。
 - **ボードDB (`.storage/boards/{slug}.sqlite`)**
-  - `threads` テーブル: スレッドタイトルと作成・更新日時。
-  - `posts` テーブル: スレッド内の投稿(投稿者、本文、投稿日時)。
+  - `threads` テーブル: スレッドのタイトルと作成・更新日時を保持します。
+  - `posts` テーブル: スレッド内の投稿(投稿者、本文、作成日時) を保持します。
 
-`SimpleBBS\Support\DatabaseManager` がファイル生成やスキーマ初期化を担い、必要に応じて PDO 接続を返します。
+`SimpleBBS\SimpleBBS` が SQLite の生成とスキーマ初期化を自動的に行います。
 
-## ドメインロジック
-- `BoardService`
-  - ボード一覧取得、ボード作成、スラッグの正規化/重複チェックを担当。
-- `ThreadService`
-  - 指定ボードのスレッド一覧、スレッド作成、投稿追加、スレッド詳細取得を担当。
-
-各サービスは対応するリポジトリ経由で DB にアクセスします。
-
-## プレゼンテーション層
-- Twig を利用したテンプレートでレイアウト(`base.twig`) を定義。
-- `boards/index.twig` でボード一覧・作成フォーム、`boards/show.twig` でスレッド一覧・作成フォーム、`threads/show.twig` で投稿表示
-と投稿フォームを表示します。
-- フロントエンドは `public/css/main.css` の軽量スタイルのみを使用。
-
-## 認証
-- `Auth\AuthManager` がリクエストごとの認証状態を判定し、Twig へログイン中のユーザー情報を共有します。
-- 既定では `Auth\GuestAuthenticator` によりゲスト利用が前提となっています。ログイン連携が必要な場合は `Auth\AuthenticatorInterface` を実装したクラスを注入してください。
-- 他システム組み込み時は `Auth\PreAuthenticatedAuthenticator` により外部で認証済みの `Auth\User` を注入できます。
+## クラス構成
+- `SimpleBBS\SimpleBBS`
+  - ボード・スレッド・投稿の取得、スレッド作成、投稿追加・編集を担当します。
+  - ボード DB への接続やスキーマ管理もこのクラスが行います。
+- `SimpleBBS\Admin`
+  - `SimpleBBS` を継承し、ボードの新規作成、更新、削除など管理者向け操作を提供します。
+- `SimpleBBS\Application`
+  - `route` クエリパラメータを基にルーティングし、Twig でテンプレートを描画します。
+  - POST 処理では `SimpleBBS` / `Admin` のメソッドを呼び出してリダイレクトまたはエラー表示を行います。
 
 ## ルーティング
-`SimpleBBS\Application` が `Router` に以下のルートを定義します。
+`SimpleBBS\Application` では以下のルートを扱います。
 
-| ルート名 | メソッド | 説明 |
-|----------|----------|------|
-| `boards.index` | GET | ボード一覧を表示 |
-| `boards.store` | POST | ボード作成 |
-| `boards.show` | GET | ボード詳細・スレッド一覧 |
-| `threads.store` | POST | スレッド作成 |
-| `threads.show` | GET | スレッド詳細・投稿一覧 |
-| `threads.posts.store` | POST | スレッドへの投稿追加 |
+| ルート | メソッド | 説明 |
+|--------|----------|------|
+| `boards` | GET | ボード一覧を表示 |
+| `board` | GET | 指定ボードのスレッド一覧を表示 |
+| `thread` | GET | スレッド詳細と投稿一覧を表示 |
+| `board_create` | POST | ボードを新規作成 |
+| `thread_create` | POST | 新しいスレッドを作成 |
+| `post_create` | POST | スレッドに返信を追加 |
+| `post_update` | POST | 投稿内容を編集 |
 
-ルートはクエリパラメータ `route` で指定し、必要な `slug` や `thread` をクエリで渡します。
+## テンプレート
+Twig テンプレートは `resources/views` に配置されています。
 
-## 組み込み手順概要
-1. `composer require simplebbs/simple-bbs` でパッケージを導入。(開発中はローカルパス指定も可能)
-2. `public/index.php` を Web ルートに配置し、`.storage/` ディレクトリへの書き込み権限を付与するか、環境変数 `STORAGE_PATH`
-   で別のディレクトリを指定します。
-3. 必要に応じて Twig テンプレートや CSS をカスタマイズしてサイトデザインと統一。
+- `base.twig` : 共通レイアウト。
+- `boards.twig` : ボード一覧と作成フォーム。
+- `board.twig` : スレッド一覧とスレッド作成フォーム。
+- `thread.twig` : 投稿一覧、返信フォーム、投稿編集フォーム。
+- `error.twig` : エラー表示用。
 
-以上の構成により、複数のボードを持つ BBS を迅速に構築できます。
+## セットアップ
+1. `.storage/` ディレクトリを書き込み可能にするか、環境変数 `STORAGE_PATH` で保存先を指定します。
+2. ブラウザで `public/index.php` にアクセスすると掲示板を利用できます。
+
+最小限のクラス構成により、他システムへの組み込みやカスタマイズも容易です。
