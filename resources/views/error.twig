@@ -1,0 +1,14 @@
+{% extends 'base.twig' %}
+
+{% block title %}エラー - simpleBBS{% endblock %}
+
+{% block content %}
+<section class="c-section">
+    <h2 class="c-section__title">エラーが発生しました</h2>
+    <p class="c-section__description">{{ message }}</p>
+    {% if details is defined and details %}
+        <pre class="c-error-details">{{ details }}</pre>
+    {% endif %}
+    <p><a href="?route=boards" class="c-link">ボード一覧に戻る</a></p>
+</section>
+{% endblock %}

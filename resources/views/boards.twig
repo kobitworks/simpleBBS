@@ -1,0 +1,54 @@
+{% extends 'base.twig' %}
+
+{% block title %}ボード一覧 - simpleBBS{% endblock %}
+
+{% block content %}
+<section class="c-section">
+    <h2 class="c-section__title">ボード一覧</h2>
+    {% if boards %}
+        <ul class="c-board-list">
+            {% for board in boards %}
+                <li class="c-board-list__item">
+                    <h3 class="c-board-list__title">
+                        <a href="?route=board&slug={{ board.slug }}">{{ board.title }}</a>
+                    </h3>
+                    <p class="c-board-list__description">{{ board.description|default('説明は登録されていません。') }}</p>
+                    <p class="c-board-list__meta">最終更新: {{ board.updated_at }} / 作成日: {{ board.created_at }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="c-empty">まだボードがありません。</p>
+    {% endif %}
+</section>
+
+<section class="c-section">
+    <h2 class="c-section__title">ボードの新規作成</h2>
+    {% if errors %}
+        <div class="c-alert">
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <form method="post" action="?route=board_create" class="c-form">
+        <div class="c-form__field">
+            <label for="board-title">ボード名</label>
+            <input type="text" id="board-title" name="title" value="{{ old.title|default('') }}" required>
+        </div>
+        <div class="c-form__field">
+            <label for="board-slug">スラッグ (任意)</label>
+            <input type="text" id="board-slug" name="slug" value="{{ old.slug|default('') }}" placeholder="例: general">
+        </div>
+        <div class="c-form__field">
+            <label for="board-description">説明 (任意)</label>
+            <textarea id="board-description" name="description" rows="3">{{ old.description|default('') }}</textarea>
+        </div>
+        <div class="c-form__actions">
+            <button type="submit" class="c-button">ボードを作成</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

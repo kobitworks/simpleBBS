@@ -2,174 +2,279 @@
 
 namespace SimpleBBS;
 
-use SimpleBBS\Auth\AuthManager;
-use SimpleBBS\Auth\AuthenticatorInterface;
-use SimpleBBS\Auth\GuestAuthenticator;
-use SimpleBBS\Controllers\AuthController;
-use SimpleBBS\Controllers\BoardController;
-use SimpleBBS\Controllers\ThreadController;
-use SimpleBBS\Core\Router;
-use SimpleBBS\Http\Request;
-use SimpleBBS\Support\Config;
+use InvalidArgumentException;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
-require_once __DIR__ . '/autoload.php';
-
 class Application
 {
-    private Router $router;
     private Environment $view;
-    private string $viewsPath;
-    private SimpleBBS $bbs;
-    private AuthManager $authManager;
-    private Config $config;
-    /** @var string[] */
-    private array $publicRoutes = [];
 
     public function __construct(
-        private readonly string $storagePath,
+        private readonly SimpleBBS $bbs,
+        private readonly Admin $admin,
         ?Environment $view = null,
         ?string $viewsPath = null,
-        ?SimpleBBS $bbs = null,
-        ?AuthManager $authManager = null,
-        ?Config $config = null
     ) {
-        $this->viewsPath = $viewsPath ?? dirname(__DIR__) . '/resources/views';
-        $this->view = $view ?? $this->createDefaultView();
-        $this->bbs = $bbs ?? SimpleBBS::create($this->storagePath);
-        $this->config = $config ?? Config::fromEnvironment();
-        $this->authManager = $authManager ?? $this->createDefaultAuthManager();
-
-        if ($this->config->requiresLogin() && !$this->authManager->supportsLoginRedirect()) {
-            throw new \RuntimeException('ログイン必須ですが、有効な認証設定が見つかりません。');
-        }
-
-        $this->bootstrap();
+        $viewsPath ??= dirname(__DIR__) . '/resources/views';
+        $this->view = $view ?? new Environment(new FilesystemLoader($viewsPath), [
+            'cache' => false,
+        ]);
     }
 
     public static function create(
         ?string $storagePath = null,
         ?Environment $view = null,
         ?string $viewsPath = null,
-        ?SimpleBBS $bbs = null,
-        ?AuthenticatorInterface $authenticator = null,
-        ?Config $config = null
     ): self {
-        $packageRoot = dirname(__DIR__);
-        $storagePath ??= $packageRoot . '/.storage';
-        $viewsPath ??= $packageRoot . '/resources/views';
+        $bbs = new SimpleBBS($storagePath);
+        $admin = new Admin($storagePath);
 
-        $bbs ??= SimpleBBS::create($storagePath);
-
-        $authManager = null;
-
-        if ($authenticator) {
-            $authManager = new AuthManager($authenticator);
-        }
-
-        return new self($storagePath, $view, $viewsPath, $bbs, $authManager, $config);
+        return new self($bbs, $admin, $view, $viewsPath);
     }
 
-    public function getRouter(): Router
+    public function handle(): void
     {
-        return $this->router;
-    }
-
-    public function getBbs(): SimpleBBS
-    {
-        return $this->bbs;
-    }
-
-    public function handle(Request $request): void
-    {
-        $route = (string)$request->query('route', 'boards.index');
-        $user = $this->authManager->user($request);
-        $this->view->addGlobal('authUser', $user);
-        $request->setUser($user);
-
-        if (
-            $this->config->requiresLogin()
-            && !$user
-            && !in_array($route, $this->publicRoutes, true)
-        ) {
-            header('Location: ?route=auth.login');
-            exit;
-        }
+        $route = (string)($_GET['route'] ?? 'boards');
+        $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
         try {
-            $response = $this->router->dispatch($route, $request);
+            if ($method === 'POST') {
+                $this->handlePost($route);
 
-            if (is_string($response)) {
-                echo $response;
+                return;
             }
+
+            $this->handleGet($route);
+        } catch (InvalidArgumentException $exception) {
+            http_response_code(400);
+            echo $this->view->render('error.twig', [
+                'message' => $exception->getMessage(),
+            ]);
         } catch (\Throwable $exception) {
             http_response_code(500);
-            echo 'アプリケーションエラー: ' . htmlspecialchars(
-                $exception->getMessage(),
-                ENT_QUOTES | ENT_SUBSTITUTE,
-                'UTF-8'
-            );
+            echo $this->view->render('error.twig', [
+                'message' => 'アプリケーションエラーが発生しました。',
+                'details' => $exception->getMessage(),
+            ]);
         }
     }
 
-    private function bootstrap(): void
+    private function handleGet(string $route, array $context = []): void
     {
-        $boardController = new BoardController(
-            $this->view,
-            $this->bbs->boards(),
-            $this->bbs->threads(),
-            $this->config
-        );
-        $threadController = new ThreadController(
-            $this->view,
-            $this->bbs->boards(),
-            $this->bbs->threads(),
-            $this->config
-        );
-        $authController = new AuthController($this->view, $this->authManager);
-
-        $router = new Router();
-        $router->get('auth.login', [$authController, 'login']);
-        $this->publicRoutes[] = 'auth.login';
-
-        $router->post('auth.logout', [$authController, 'logout']);
-
-        $router->get('boards.index', [$boardController, 'index']);
-        $router->post('boards.store', [$boardController, 'store']);
-        $router->get('boards.show', [$boardController, 'show']);
-
-        $router->post('threads.store', [$threadController, 'create']);
-        $router->get('threads.show', [$threadController, 'show']);
-        $router->post('threads.posts.store', [$threadController, 'storePost']);
-
-        $this->router = $router;
-
-        $this->view->addGlobal('features', [
-            'requireLogin' => $this->config->requiresLogin(),
-            'allowAnonymousPosting' => $this->config->allowsAnonymousPosting(),
-            'allowUserBoardCreation' => $this->config->allowsUserBoardCreation(),
-        ]);
-        $this->view->addGlobal('authSupportsLogin', $this->authManager->supportsLoginRedirect());
+        switch ($route) {
+            case 'boards':
+                $this->renderBoards($context);
+                break;
+            case 'board':
+                $slug = (string)($_GET['slug'] ?? '');
+                if ($slug === '') {
+                    http_response_code(400);
+                    echo $this->view->render('error.twig', [
+                        'message' => 'ボードが指定されていません。',
+                    ]);
+                    return;
+                }
+                $this->renderBoard($slug, $context);
+                break;
+            case 'thread':
+                $slug = (string)($_GET['slug'] ?? '');
+                $threadId = (int)($_GET['thread'] ?? 0);
+                if ($slug === '' || $threadId <= 0) {
+                    http_response_code(400);
+                    echo $this->view->render('error.twig', [
+                        'message' => 'スレッドが指定されていません。',
+                    ]);
+                    return;
+                }
+                $editPost = isset($_GET['edit']) ? (int)$_GET['edit'] : null;
+                $this->renderThread($slug, $threadId, $context, $editPost);
+                break;
+            default:
+                http_response_code(404);
+                echo $this->view->render('error.twig', [
+                    'message' => '指定されたページは存在しません。',
+                ]);
+        }
     }
 
-    private function createDefaultView(): Environment
+    private function handlePost(string $route): void
     {
-        $loader = new FilesystemLoader($this->viewsPath);
-
-        return new Environment($loader, [
-            'cache' => false,
-        ]);
+        switch ($route) {
+            case 'board_create':
+                $this->handleBoardCreate();
+                break;
+            case 'thread_create':
+                $this->handleThreadCreate();
+                break;
+            case 'post_create':
+                $this->handlePostCreate();
+                break;
+            case 'post_update':
+                $this->handlePostUpdate();
+                break;
+            default:
+                http_response_code(404);
+                echo $this->view->render('error.twig', [
+                    'message' => '指定された操作は存在しません。',
+                ]);
+        }
     }
 
-    private function createDefaultAuthManager(): AuthManager
+    private function handleBoardCreate(): void
     {
-        if ($this->config->requiresLogin()) {
-            throw new \RuntimeException(
-                'ログイン必須の設定ですが、対応する認証方式が提供されていません。'
-            );
+        $title = (string)($_POST['title'] ?? '');
+        $slug = $_POST['slug'] ?? null;
+        $description = $_POST['description'] ?? null;
+
+        try {
+            $board = $this->admin->createBoard($title, $slug, $description);
+            header('Location: ?route=board&slug=' . urlencode($board['slug']));
+            exit;
+        } catch (InvalidArgumentException $exception) {
+            http_response_code(422);
+            $this->renderBoards([
+                'errors' => [$exception->getMessage()],
+                'old' => [
+                    'title' => $title,
+                    'slug' => (string)($slug ?? ''),
+                    'description' => (string)($description ?? ''),
+                ],
+            ]);
+        }
+    }
+
+    private function handleThreadCreate(): void
+    {
+        $slug = (string)($_GET['slug'] ?? '');
+        if ($slug === '') {
+            http_response_code(400);
+            echo $this->view->render('error.twig', [
+                'message' => 'ボードが指定されていません。',
+            ]);
+            return;
         }
 
-        return new AuthManager(new GuestAuthenticator());
+        $title = (string)($_POST['title'] ?? '');
+        $author = $_POST['author_name'] ?? null;
+        $body = (string)($_POST['body'] ?? '');
+
+        try {
+            $threadId = $this->bbs->createThread($slug, $title, $author, $body);
+            header('Location: ?route=thread&slug=' . urlencode($slug) . '&thread=' . $threadId);
+            exit;
+        } catch (InvalidArgumentException $exception) {
+            http_response_code(422);
+            $this->renderBoard($slug, [
+                'errors' => [$exception->getMessage()],
+                'old' => [
+                    'thread' => [
+                        'title' => $title,
+                        'author_name' => (string)($author ?? ''),
+                        'body' => $body,
+                    ],
+                ],
+            ]);
+        }
+    }
+
+    private function handlePostCreate(): void
+    {
+        $slug = (string)($_GET['slug'] ?? '');
+        $threadId = (int)($_GET['thread'] ?? 0);
+        if ($slug === '' || $threadId <= 0) {
+            http_response_code(400);
+            echo $this->view->render('error.twig', [
+                'message' => '投稿先のスレッドが指定されていません。',
+            ]);
+            return;
+        }
+
+        $author = $_POST['author_name'] ?? null;
+        $body = (string)($_POST['body'] ?? '');
+
+        try {
+            $this->bbs->addPost($slug, $threadId, $author, $body);
+            header('Location: ?route=thread&slug=' . urlencode($slug) . '&thread=' . $threadId);
+            exit;
+        } catch (InvalidArgumentException $exception) {
+            http_response_code(422);
+            $this->renderThread($slug, $threadId, [
+                'errors' => [$exception->getMessage()],
+                'old' => [
+                    'reply' => [
+                        'author_name' => (string)($author ?? ''),
+                        'body' => $body,
+                    ],
+                ],
+            ]);
+        }
+    }
+
+    private function handlePostUpdate(): void
+    {
+        $slug = (string)($_GET['slug'] ?? '');
+        $threadId = (int)($_GET['thread'] ?? 0);
+        $postId = (int)($_GET['post'] ?? 0);
+        if ($slug === '' || $threadId <= 0 || $postId <= 0) {
+            http_response_code(400);
+            echo $this->view->render('error.twig', [
+                'message' => '編集対象の投稿が指定されていません。',
+            ]);
+            return;
+        }
+
+        $author = $_POST['author_name'] ?? null;
+        $body = (string)($_POST['body'] ?? '');
+
+        try {
+            $this->bbs->updatePost($slug, $threadId, $postId, $author, $body);
+            header('Location: ?route=thread&slug=' . urlencode($slug) . '&thread=' . $threadId);
+            exit;
+        } catch (InvalidArgumentException $exception) {
+            http_response_code(422);
+            $this->renderThread($slug, $threadId, [
+                'errors' => [$exception->getMessage()],
+                'old' => [
+                    'post' => [
+                        'id' => $postId,
+                        'author_name' => (string)($author ?? ''),
+                        'body' => $body,
+                    ],
+                ],
+            ], $postId);
+        }
+    }
+
+    private function renderBoards(array $context = []): void
+    {
+        echo $this->view->render('boards.twig', [
+            'boards' => $this->bbs->listBoards(),
+            'errors' => $context['errors'] ?? [],
+            'old' => $context['old'] ?? [],
+        ]);
+    }
+
+    private function renderBoard(string $slug, array $context = []): void
+    {
+        $board = $this->bbs->getBoard($slug);
+        echo $this->view->render('board.twig', [
+            'board' => $board,
+            'threads' => $this->bbs->listThreads($board['slug']),
+            'errors' => $context['errors'] ?? [],
+            'old' => $context['old'] ?? [],
+        ]);
+    }
+
+    private function renderThread(string $slug, int $threadId, array $context = [], ?int $editingPostId = null): void
+    {
+        $board = $this->bbs->getBoard($slug);
+        echo $this->view->render('thread.twig', [
+            'board' => $board,
+            'thread' => $this->bbs->getThread($board['slug'], $threadId),
+            'errors' => $context['errors'] ?? [],
+            'old' => $context['old'] ?? [],
+            'editingPostId' => $editingPostId,
+        ]);
     }
 }
