@@ -4,7 +4,6 @@ namespace SimpleBBS;
 
 use SimpleBBS\Auth\AuthManager;
 use SimpleBBS\Auth\AuthenticatorInterface;
-use SimpleBBS\Auth\GoogleAuthenticator;
 use SimpleBBS\Auth\GuestAuthenticator;
 use SimpleBBS\Controllers\AuthController;
 use SimpleBBS\Controllers\BoardController;
@@ -134,13 +133,6 @@ class Application
         $router->get('auth.login', [$authController, 'login']);
         $this->publicRoutes[] = 'auth.login';
 
-        if ($this->authManager->supportsLoginRedirect()) {
-            $router->get('auth.redirect', [$authController, 'redirect']);
-            $router->get('auth.callback', [$authController, 'callback']);
-            $this->publicRoutes[] = 'auth.redirect';
-            $this->publicRoutes[] = 'auth.callback';
-        }
-
         $router->post('auth.logout', [$authController, 'logout']);
 
         $router->get('boards.index', [$boardController, 'index']);
@@ -172,31 +164,9 @@ class Application
 
     private function createDefaultAuthManager(): AuthManager
     {
-        $clientId = getenv('SIMPLEBBS_GOOGLE_CLIENT_ID');
-        $clientSecret = getenv('SIMPLEBBS_GOOGLE_CLIENT_SECRET');
-        $redirectUri = getenv('SIMPLEBBS_GOOGLE_REDIRECT_URI');
-
-        if (!$redirectUri) {
-            $host = $_SERVER['HTTP_HOST'] ?? null;
-            $script = $_SERVER['SCRIPT_NAME'] ?? null;
-
-            if ($host && $script) {
-                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-                $baseUri = sprintf('%s://%s%s', $scheme, $host, $script);
-                $separator = str_contains($baseUri, '?') ? '&' : '?';
-                $redirectUri = $baseUri . $separator . 'route=auth.callback';
-            }
-        }
-
-        if ($clientId && $clientSecret && $redirectUri) {
-            return new AuthManager(new GoogleAuthenticator($clientId, $clientSecret, $redirectUri));
-        }
-
         if ($this->config->requiresLogin()) {
             throw new \RuntimeException(
-                '認証が設定されていません。Googleログインを利用する場合は '
-                . 'SIMPLEBBS_GOOGLE_CLIENT_ID, SIMPLEBBS_GOOGLE_CLIENT_SECRET, SIMPLEBBS_GOOGLE_REDIRECT_URI '
-                . 'を設定するか、AuthenticatorInterface を指定してください。'
+                'ログイン必須の設定ですが、対応する認証方式が提供されていません。'
             );
         }
 
