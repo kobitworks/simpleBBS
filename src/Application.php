@@ -5,13 +5,17 @@ namespace SimpleBBS;
 use SimpleBBS\Auth\AuthManager;
 use SimpleBBS\Auth\AuthenticatorInterface;
 use SimpleBBS\Auth\GoogleAuthenticator;
-use SimpleBBS\Auth\GuestAuthenticator;
+use SimpleBBS\Auth\HybridAuthenticator;
+use SimpleBBS\Auth\SessionAuthenticator;
 use SimpleBBS\Controllers\AuthController;
 use SimpleBBS\Controllers\BoardController;
 use SimpleBBS\Controllers\ThreadController;
 use SimpleBBS\Core\Router;
 use SimpleBBS\Http\Request;
+use SimpleBBS\Repositories\UserRepository;
+use SimpleBBS\Services\PasswordAuthService;
 use SimpleBBS\Support\Config;
+use SimpleBBS\Support\PasswordSetupMailer;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -25,6 +29,8 @@ class Application
     private SimpleBBS $bbs;
     private AuthManager $authManager;
     private Config $config;
+    private ?SessionAuthenticator $sessionAuthenticator = null;
+    private ?PasswordAuthService $passwordAuthService = null;
     /** @var string[] */
     private array $publicRoutes = [];
 
@@ -42,7 +48,7 @@ class Application
         $this->config = $config ?? Config::fromEnvironment();
         $this->authManager = $authManager ?? $this->createDefaultAuthManager();
 
-        if ($this->config->requiresLogin() && !$this->authManager->supportsLoginRedirect()) {
+        if ($this->config->requiresLogin() && !$this->authManager->supportsLogin()) {
             throw new \RuntimeException('ログイン必須ですが、有効な認証設定が見つかりません。');
         }
 
@@ -128,11 +134,24 @@ class Application
             $this->bbs->threads(),
             $this->config
         );
-        $authController = new AuthController($this->view, $this->authManager);
+        $passwordAuth = $this->passwordAuthService ??= $this->createPasswordAuthService();
+        $authController = new AuthController($this->view, $this->authManager, $passwordAuth);
 
         $router = new Router();
         $router->get('auth.login', [$authController, 'login']);
         $this->publicRoutes[] = 'auth.login';
+
+        if ($passwordAuth) {
+            $router->post('auth.login.attempt', [$authController, 'attemptLogin']);
+            $router->get('auth.register', [$authController, 'showRegister']);
+            $router->post('auth.register', [$authController, 'register']);
+            $router->get('auth.password.edit', [$authController, 'showPasswordForm']);
+            $router->post('auth.password.update', [$authController, 'updatePassword']);
+            $this->publicRoutes[] = 'auth.login.attempt';
+            $this->publicRoutes[] = 'auth.register';
+            $this->publicRoutes[] = 'auth.password.edit';
+            $this->publicRoutes[] = 'auth.password.update';
+        }
 
         if ($this->authManager->supportsLoginRedirect()) {
             $router->get('auth.redirect', [$authController, 'redirect']);
@@ -158,7 +177,7 @@ class Application
             'allowAnonymousPosting' => $this->config->allowsAnonymousPosting(),
             'allowUserBoardCreation' => $this->config->allowsUserBoardCreation(),
         ]);
-        $this->view->addGlobal('authSupportsLogin', $this->authManager->supportsLoginRedirect());
+        $this->view->addGlobal('authSupportsLogin', $this->authManager->supportsLogin());
     }
 
     private function createDefaultView(): Environment
@@ -168,6 +187,18 @@ class Application
         return new Environment($loader, [
             'cache' => false,
         ]);
+    }
+
+    private function createPasswordAuthService(): ?PasswordAuthService
+    {
+        if (!$this->sessionAuthenticator) {
+            return null;
+        }
+
+        $userRepository = new UserRepository($this->bbs->database());
+        $mailer = new PasswordSetupMailer($this->storagePath . '/mail.log');
+
+        return new PasswordAuthService($userRepository, $this->sessionAuthenticator, $mailer);
     }
 
     private function createDefaultAuthManager(): AuthManager
@@ -188,18 +219,16 @@ class Application
             }
         }
 
+        $userRepository = new UserRepository($this->bbs->database());
+        $sessionAuthenticator = new SessionAuthenticator($userRepository);
+        $this->sessionAuthenticator = $sessionAuthenticator;
+
         if ($clientId && $clientSecret && $redirectUri) {
-            return new AuthManager(new GoogleAuthenticator($clientId, $clientSecret, $redirectUri));
+            $googleAuthenticator = new GoogleAuthenticator($clientId, $clientSecret, $redirectUri);
+
+            return new AuthManager(new HybridAuthenticator($sessionAuthenticator, $googleAuthenticator));
         }
 
-        if ($this->config->requiresLogin()) {
-            throw new \RuntimeException(
-                '認証が設定されていません。Googleログインを利用する場合は '
-                . 'SIMPLEBBS_GOOGLE_CLIENT_ID, SIMPLEBBS_GOOGLE_CLIENT_SECRET, SIMPLEBBS_GOOGLE_REDIRECT_URI '
-                . 'を設定するか、AuthenticatorInterface を指定してください。'
-            );
-        }
-
-        return new AuthManager(new GuestAuthenticator());
+        return new AuthManager(new HybridAuthenticator($sessionAuthenticator));
     }
 }

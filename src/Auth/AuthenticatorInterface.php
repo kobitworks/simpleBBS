@@ -10,6 +10,8 @@ interface AuthenticatorInterface
 
     public function supportsLoginRedirect(): bool;
 
+    public function supportsPasswordLogin(): bool;
+
     public function initiateLogin(Request $request): void;
 
     public function handleCallback(Request $request): ?User;

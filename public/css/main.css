@@ -116,6 +116,12 @@ a:hover {
     margin-bottom: 1rem;
 }
 
+.c-alert--success {
+    border-color: #34d399;
+    background: #d1fae5;
+    color: #047857;
+}
+
 .c-alert ul {
     margin: 0;
     padding-left: 1.25rem;

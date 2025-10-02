@@ -41,6 +41,11 @@ class GoogleAuthenticator implements AuthenticatorInterface
         return true;
     }
 
+    public function supportsPasswordLogin(): bool
+    {
+        return false;
+    }
+
     public function initiateLogin(Request $request): void
     {
         $this->ensureSession();

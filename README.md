@@ -34,15 +34,15 @@ composer require simplebbs/simple-bbs
 
 ### 認証設定
 
-ログインを利用する場合は Google OAuth クライアントを用意し、以下の環境変数を設定してください。
+simpleBBS にはメールアドレスとパスワードによるログイン機能が標準で組み込まれています。ログインページからメールアドレスを登録すると、パスワード設定用のURLを `.storage/mail.log` に書き出します。本番環境ではこのファイルをトリガーにして実際のメール送信処理へ接続してください。
+
+Google OAuth を併用する場合は以下の環境変数を設定します。
 
 - `SIMPLEBBS_GOOGLE_CLIENT_ID`
 - `SIMPLEBBS_GOOGLE_CLIENT_SECRET`
 - `SIMPLEBBS_GOOGLE_REDIRECT_URI` (例: `https://example.com/index.php?route=auth.callback`)
 
 他システムに組み込んで利用する場合は、`SimpleBBS\Auth\PreAuthenticatedAuthenticator` を利用して認証済みユーザー情報を渡してください。
-
-ログインを必須にしない場合は上記の環境変数を設定しなくても動作します。
 
 ```php
 use SimpleBBS\Auth\PreAuthenticatedAuthenticator;

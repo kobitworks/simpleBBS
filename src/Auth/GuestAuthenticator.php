@@ -16,6 +16,11 @@ class GuestAuthenticator implements AuthenticatorInterface
         return false;
     }
 
+    public function supportsPasswordLogin(): bool
+    {
+        return false;
+    }
+
     public function initiateLogin(Request $request): void
     {
         // ゲストモードでは何もしません。

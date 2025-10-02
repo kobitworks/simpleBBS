@@ -25,6 +25,16 @@ class AuthManager
         return $this->authenticator->supportsLoginRedirect();
     }
 
+    public function supportsPasswordLogin(): bool
+    {
+        return $this->authenticator->supportsPasswordLogin();
+    }
+
+    public function supportsLogin(): bool
+    {
+        return $this->supportsLoginRedirect() || $this->supportsPasswordLogin();
+    }
+
     public function initiateLogin(Request $request): void
     {
         $this->authenticator->initiateLogin($request);

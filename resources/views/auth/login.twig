@@ -15,13 +15,36 @@
         </div>
     {% endif %}
 
+    {% if notice == 'registration_sent' %}
+        <div class="c-alert c-alert--success">
+            <p>{{ values.email }} 宛にパスワード設定用のメールを送信しました。メール内のリンクからパスワードを設定してください。</p>
+        </div>
+    {% endif %}
+
     {% if login.message is defined %}
         <p>{{ login.message }}</p>
     {% endif %}
 
-    {% if login.loginRoute is defined %}
-        <p>Googleアカウントでログインしてください。</p>
-        <a href="{{ login.loginRoute }}" class="c-button">Googleでログイン</a>
+    {% if supportsPassword %}
+        <form method="post" action="{{ login.password.action }}" class="c-form">
+            <div class="c-form__row">
+                <label for="email">メールアドレス</label>
+                <input type="email" name="email" id="email" value="{{ values.email }}" required>
+            </div>
+            <div class="c-form__row">
+                <label for="password">パスワード</label>
+                <input type="password" name="password" id="password" required>
+            </div>
+            <div class="c-form__actions">
+                <button type="submit" class="c-button">ログイン</button>
+            </div>
+        </form>
+        <p><a href="{{ login.password.registerRoute }}" class="c-button c-button--link">新規登録はこちら</a></p>
+    {% endif %}
+
+    {% if login.google is defined %}
+        <p>Googleアカウントでログインすることもできます。</p>
+        <a href="{{ login.google.loginRoute }}" class="c-button">Googleでログイン</a>
     {% endif %}
 </section>
 {% endblock %}

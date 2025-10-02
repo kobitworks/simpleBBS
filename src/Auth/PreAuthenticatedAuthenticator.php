@@ -20,6 +20,11 @@ class PreAuthenticatedAuthenticator implements AuthenticatorInterface
         return false;
     }
 
+    public function supportsPasswordLogin(): bool
+    {
+        return false;
+    }
+
     public function initiateLogin(Request $request): void
     {
         // 組み込み利用時は外部システムで認証済みの想定のため特別な処理は不要

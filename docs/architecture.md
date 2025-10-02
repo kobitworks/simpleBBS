@@ -26,6 +26,8 @@ docs/                   ... ドキュメント
 ## データベース
 - **システムDB (`.storage/system.sqlite`)**
   - `boards` テーブル: ボードのメタ情報(スラッグ、タイトル、説明、作成日時) を保持。
+  - `users` テーブル: ログインユーザーの氏名・メールアドレス・パスワードハッシュを保持。
+  - `password_resets` テーブル: パスワード設定用トークンと有効期限を保持。
 - **ボードDB (`.storage/boards/{slug}.sqlite`)**
   - `threads` テーブル: スレッドタイトルと作成・更新日時。
   - `posts` テーブル: スレッド内の投稿(投稿者、本文、投稿日時)。
@@ -48,7 +50,8 @@ docs/                   ... ドキュメント
 
 ## 認証
 - `Auth\AuthManager` がリクエストごとの認証状態を判定し、Twig へログイン中のユーザー情報を共有します。
-- スタンドアロン利用時は `Auth\GoogleAuthenticator` が Google OAuth 2.0 を利用してセッションにユーザー情報を保存します。
+- スタンドアロン利用時は `Auth\HybridAuthenticator` が `Auth\SessionAuthenticator` と `Auth\GoogleAuthenticator` を組み合わせ、メールアドレス/パスワードまたは Google OAuth のどちらでもログインできるようにしています。
+- `Services\PasswordAuthService` がメールアドレス登録・パスワード設定リンク生成・パスワード更新を担当し、`Support\PasswordSetupMailer` がリンクを `.storage/mail.log` に書き出します。
 - 他システム組み込み時は `Auth\PreAuthenticatedAuthenticator` により外部で認証済みの `Auth\User` を注入できます。
 
 ## ルーティング
