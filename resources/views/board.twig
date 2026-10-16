@@ -45,6 +45,7 @@
 <section class="c-section">
     <h3 class="c-section__subtitle">新しいスレッドを作成</h3>
     <form method="post" action="?route=thread_create&slug={{ board.slug }}" class="c-form">
+        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
         <div class="c-form__field">
             <label for="thread-title">タイトル</label>
             <input type="text" id="thread-title" name="title" value="{{ old.thread.title|default('') }}" required>
