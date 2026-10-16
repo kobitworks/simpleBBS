@@ -22,8 +22,9 @@
     {% endif %}
 </section>
 
+{% if canCreateBoards %}
 <section class="c-section">
-    <h2 class="c-section__title">ボードの新規作成</h2>
+    <h2 class="c-section__title">ボードの新規作成（管理者専用）</h2>
     {% if errors %}
         <div class="c-alert">
             <ul>
@@ -34,6 +35,11 @@
         </div>
     {% endif %}
     <form method="post" action="?route=board_create" class="c-form">
+        <input type="hidden" name="csrf_token" value="{{ csrfToken }}">
+        <div class="c-form__field">
+            <label for="board-admin-token">管理者トークン</label>
+            <input type="password" id="board-admin-token" name="admin_token" autocomplete="off" required>
+        </div>
         <div class="c-form__field">
             <label for="board-title">ボード名</label>
             <input type="text" id="board-title" name="title" value="{{ old.title|default('') }}" required>
@@ -51,4 +57,7 @@
         </div>
     </form>
 </section>
+{% else %}
+<section class="c-section"><p class="c-empty">ボードの新規作成は管理者に依頼してください。</p></section>
+{% endif %}
 {% endblock %}

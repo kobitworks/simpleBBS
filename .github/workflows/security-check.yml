@@ -1,0 +1,40 @@
+name: PHP security checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'resources/views/**'
+      - 'composer.json'
+      - '.github/workflows/security-check.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'resources/views/**'
+      - 'composer.json'
+      - '.github/workflows/security-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: PHP syntax
+        run: |
+          php -v
+          find src public -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
+      - name: Composer dependency audit
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist --no-scripts
+          composer audit --no-interaction

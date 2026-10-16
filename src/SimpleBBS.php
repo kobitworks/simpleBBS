@@ -22,7 +22,7 @@ class SimpleBBS
         $this->storagePath = rtrim($storagePath, DIRECTORY_SEPARATOR);
 
         if (!is_dir($this->storagePath)) {
-            if (!mkdir($this->storagePath, 0777, true) && !is_dir($this->storagePath)) {
+            if (!mkdir($this->storagePath, 0700, true) && !is_dir($this->storagePath)) {
                 throw new RuntimeException('データディレクトリを作成できませんでした: ' . $this->storagePath);
             }
         }
@@ -134,6 +134,8 @@ class SimpleBBS
         if ($title === '' || $body === '') {
             throw new InvalidArgumentException('スレッドのタイトルと本文を入力してください。');
         }
+        $this->validateTextSize($title, 240, 'スレッドタイトル');
+        $this->validateTextSize($body, 16384, '本文');
 
         $author = $this->filterAuthor($authorName);
         $connection = $this->boardConnection($board['slug']);
@@ -165,13 +167,14 @@ class SimpleBBS
         }
     }
 
-    public function addPost(string $boardSlug, int $threadId, ?string $authorName, string $body): void
+    public function addPost(string $boardSlug, int $threadId, ?string $authorName, string $body): int
     {
         $board = $this->getBoard($boardSlug);
         $body = trim($body);
         if ($body === '') {
             throw new InvalidArgumentException('本文を入力してください。');
         }
+        $this->validateTextSize($body, 16384, '本文');
 
         $connection = $this->boardConnection($board['slug']);
         $author = $this->filterAuthor($authorName);
@@ -181,11 +184,12 @@ class SimpleBBS
 
         try {
             $this->fetchThreadRow($connection, $threadId);
-            $this->insertPost($connection, $threadId, $author, $body, $now);
+            $postId = $this->insertPost($connection, $threadId, $author, $body, $now);
             $this->touchThread($connection, $threadId, $now);
             $connection->commit();
 
             $this->touchBoard($board['slug'], $now);
+            return $postId;
         } catch (\Throwable $exception) {
             $connection->rollBack();
             throw $exception;
@@ -199,6 +203,7 @@ class SimpleBBS
         if ($body === '') {
             throw new InvalidArgumentException('本文を入力してください。');
         }
+        $this->validateTextSize($body, 16384, '本文');
 
         $connection = $this->boardConnection($board['slug']);
         $author = $this->filterAuthor($authorName);
@@ -259,7 +264,7 @@ class SimpleBBS
 
         $boardsPath = $this->storagePath . '/boards';
         if (!is_dir($boardsPath)) {
-            if (!mkdir($boardsPath, 0777, true) && !is_dir($boardsPath)) {
+            if (!mkdir($boardsPath, 0700, true) && !is_dir($boardsPath)) {
                 throw new RuntimeException('ボード用データディレクトリを作成できませんでした: ' . $boardsPath);
             }
         }
@@ -295,7 +300,16 @@ class SimpleBBS
     {
         $name = trim((string)$authorName);
 
-        return $name !== '' ? $name : '名無しさん';
+        $name = $name !== '' ? $name : '名無しさん';
+        $this->validateTextSize($name, 120, '投稿者名');
+        return $name;
+    }
+
+    protected function validateTextSize(string $value, int $maximumBytes, string $label): void
+    {
+        if (strlen($value) > $maximumBytes) {
+            throw new InvalidArgumentException($label . 'が長すぎます。');
+        }
     }
 
     protected function touchBoard(string $slug, string $timestamp): void
@@ -365,7 +379,7 @@ class SimpleBBS
         );
     }
 
-    private function insertPost(PDO $connection, int $threadId, string $author, string $body, string $createdAt): void
+    private function insertPost(PDO $connection, int $threadId, string $author, string $body, string $createdAt): int
     {
         $statement = $connection->prepare(
             'INSERT INTO posts (thread_id, author_name, body, created_at) VALUES (:thread, :author, :body, :created)'
@@ -376,6 +390,7 @@ class SimpleBBS
             ':body' => $body,
             ':created' => $createdAt,
         ]);
+        return (int)$connection->lastInsertId();
     }
 
     private function ensureColumnExists(PDO $pdo, string $table, string $column, string $definition): bool
